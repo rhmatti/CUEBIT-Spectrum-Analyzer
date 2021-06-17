@@ -1,5 +1,5 @@
 ***************************************************************************************
-Program: EBIT Ion Beam Analyzer
+Program: CUEBIT Spectrum Analyzer
 Author: Richard Mattish
 Last Updated: 06/10/2021
 
@@ -30,7 +30,7 @@ Install Instructions
 
 User Instructions
 --------------------
-1. Open the file "EBIT Ion Beam Analyzer.pyw"
+1. Open the file "CUEBIT Spectrum Analyzer.pyw"
 
 2. Select the "Import" option from the drop-down File menu (File>Import) or use the shortcut <Ctrl+I>
 
