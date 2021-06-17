@@ -74,7 +74,7 @@ User Instructions
 	* A graph will appear comparing the spectrum to that isotope's charge states
 	* Anything not on a vertical dashed line corresponding to that isotope's charge state should be ignored
 	* If the peaks align well with the charge states, that isotope may be present in the spectrum
-	* Repeat steps these steps for additional isotopes of interest
+	* Repeat these steps for additional isotopes of interest
 	* If you want to evaluate an isotope other than the most abundant isotope of the given elements, or of an element not listed in the Analysis menu, select the "Other" option
 	* Enter the atomic number Z and atomic mass (in amu) for the desired isotope, then select "Run Comparison"
 
