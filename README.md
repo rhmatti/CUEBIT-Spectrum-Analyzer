@@ -21,6 +21,7 @@ Installation Instructions
 	d. Matplotlib
 	
 		python -m pip install matplotlib
+3. Download the code as a .zip file, and extract all contents to the desired directory
 
 
 User Instructions
