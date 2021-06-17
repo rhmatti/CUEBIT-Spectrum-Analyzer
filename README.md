@@ -5,6 +5,7 @@ Install Instructions
 1. To run, users must have a version of python 3 installed on their machine.
 
 2. In addition to the base install of python 3, the following packages are required:
+
 	a. Scipy
 		To install: python -m pip install scipy
 
