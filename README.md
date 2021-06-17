@@ -1,6 +1,6 @@
 # CUEBIT-Spectrum-Analyzer
 
-Install Instructions
+Installation Instructions
 --------------------
 1. To run, users must have a version of python 3 installed on their machine.
 
