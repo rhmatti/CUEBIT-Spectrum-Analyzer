@@ -7,15 +7,19 @@ Install Instructions
 2. In addition to the base install of python 3, the following packages are required:
 
 	a. Scipy
+	
 		To install: python -m pip install scipy
 
 	b. Numpy
+	
 		To install: python -m pip install numpy
 
 	c. Pillow
+	
 		To install: python -m pip install pillow
 
 	d. Matplotlib
+	
 		To install: python -m pip install matplotlib
 
 
@@ -30,21 +34,23 @@ User Instructions
 4. Perform a calibration of the offset/fudge-factor V
 
 	a. Automatic Calibration:
-		1) Select "Calibrate" from the drop-down File menu (File>Calibrate)
-		2) A separate progress window will open. Allow calibration to complete before closing
-		3) Once the calibration is marked complete, you may close the window
-		4) The offset V has been calibrated!
+	
+	1) Select "Calibrate" from the drop-down File menu (File>Calibrate)
+	2) A separate progress window will open. Allow calibration to complete before closing
+	3) Once the calibration is marked complete, you may close the window
+	4) The offset V has been calibrated!
 
 		Note: 	This method is quicker than manual calibration, but I do not guarantee it is always accurate.
 			Always evaluate it's accuracy yourself afterwards using the Analysis menu's various options!
 
 	b. Manual Calibration:
-		1) Select "Settings" from the drop-down File menu (File>Settings)
-		2) Enter a new value for V in the appropriate box
-		3) Select "Update and Close"
-		4) Access various comparisons from the drop-down Analysis menu
-		5) Visually compare/evaluate that setting for V using the graphs
-		6) Repeat steps 1-5 as needed until a good value for V has been found
+	
+	1) Select "Settings" from the drop-down File menu (File>Settings)
+	2) Enter a new value for V in the appropriate box
+	3) Select "Update and Close"
+	4) Access various comparisons from the drop-down Analysis menu
+	5) Visually compare/evaluate that setting for V using the graphs
+	6) Repeat steps 1-5 as needed until a good value for V has been found
 
 5. Perform a spectral analysis
 
