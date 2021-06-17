@@ -1,4 +1,4 @@
-# CUEBIT-Spectrum-Analyzer
+# CUEBIT Spectrum Analyzer
 
 Installation Instructions
 --------------------
