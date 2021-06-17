@@ -1,4 +1,4 @@
-#EBIT Ion Beam Analyzer
+#CUEBIT Spectrum Analyzer
 #Author: Richard Mattish
 #Last Updated: 06/10/2021
 
