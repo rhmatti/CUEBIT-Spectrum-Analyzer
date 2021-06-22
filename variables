@@ -1,2 +1,9 @@
-V=3330.0
+V=3330
 R=0.35
+energy=4500
+carbon=1
+nitrogen=1
+oxygen=1
+neon=1
+argon=0
+krypton=0

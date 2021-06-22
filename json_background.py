@@ -257,6 +257,20 @@
                     "mass4": 0,
                     "mass5": 0,
                     "charge": 26
+                },
+                {
+                    "name": "Kr",
+                    "mass1": 83.912,
+                    "percent1": 0.570,
+                    "mass2": 85.911,
+                    "percent2": 0.173,
+                    "mass3": 81.913,
+                    "percent3": 0.116,
+                    "mass4": 82.914,
+                    "percent4": 0.115,
+                    "mass5": 79.916,
+                    "percent5": 0.023,
+                    "charge": 26
                 }
               ]
 }                                                          

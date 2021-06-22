@@ -1,4 +1,4 @@
-#CUEBIT Spectrum Analyzer
+#EBIT Ion Beam Analyzer
 #Author: Richard Mattish
 #Last Updated: 06/10/2021
 
@@ -27,7 +27,8 @@ from decimal import Decimal
 from tkinter import filedialog
 from PIL import ImageTk, Image
 import json
-from threading import *
+import threading
+
 
 #Defines global variables
 global canvas
@@ -41,6 +42,8 @@ global calibrate_run
 global modes
 global graphType
 global calibrate
+global calibration_elements
+global energy
 
 calibrate_run = 0
 modes = []
@@ -63,11 +66,22 @@ try:
     variables = f.readlines()
     V = float(variables[0].split('=')[1])
     R = float(variables[1].split('=')[1])
+    energy = int(variables[2].split('=')[1])
+    carbon = int(variables[3].split('=')[1])
+    nitrogen = int(variables[4].split('=')[1])
+    oxygen = int(variables[5].split('=')[1])
+    neon = int(variables[6].split('=')[1])
+    argon = int(variables[7].split('=')[1])
+    krypton = int(variables[8].split('=')[1])
+    calibration_elements = [carbon, nitrogen, oxygen, neon, argon, krypton]
 except:
     V = 3330
     R = 0.35
+    energy = 4500
+    calibration_elements = [1, 1, 1, 0, 1, 0]
     f = open("variables",'w')
-    f.write('V='+str(V)+'\n'+'R='+str(R))
+    f.write('V='+str(V)+'\n'+'R='+str(R)+'\n'+'energy='+str(energy)+'\n')
+    f.write('carbon=1\nnitrogen=1\noxygen=1\nneon=0\nargon=1\nkrypton=0')
     f.close()
     
 #Charge to mass ratio of a proton
@@ -153,6 +167,7 @@ def Instructions():
 def Settings():
     global V
     global R
+    global calibration_elements
     t = Toplevel(root)
     t.geometry('400x300')
     t.wm_title("Settings")
@@ -172,22 +187,30 @@ def Settings():
     L3 = Label(t, text = 'm', font = font2)
     L3.place(relx=0.64, rely=0.4, anchor = W)
         
-    b1 = Button(t, text = 'Update & Close', relief = 'raised', background='lightblue', activebackground='blue', font = font1, width = 15, height = 2, command = lambda: [updateSettings(float(E1.get()),float(E2.get())),t.destroy()])
+    b1 = Button(t, text = 'Update & Close', relief = 'raised', background='lightblue', activebackground='blue', font = font1, width = 15, height = 2,\
+                command = lambda: [updateSettings(float(E1.get()),float(E2.get()), energy, calibration_elements),t.destroy()])
     b1.place(relx=0.5, rely=0.6, anchor = CENTER)
 
-    b2 = Button(t, text = 'Reset', relief = 'raised', background='pink', activebackground='red', font = font1, width = 10, height = 1, command = lambda: [updateSettings(3330,0.35),t.destroy()])
+    b2 = Button(t, text = 'Reset', relief = 'raised', background='pink', activebackground='red', font = font1, width = 10, height = 1, command = lambda: [updateSettings(3330,0.35, 4500, [1, 1, 1, 0, 1, 0]),t.destroy()])
     b2.place(relx=0.5, rely=0.9, anchor = CENTER)
 
-#Updates the persistent global variables V and R
-def updateSettings(E1, E2):
+#Updates the persistent global variables V and R, as well as store which elements the user has selected for calibration
+def updateSettings(E1, E2, E3, E4):
     global V
     global R
     global graphType
     global calibrate
+    global energy
+    global calibration_elements
     V = E1
     R = E2
+    energy = int(E3)
+    calibration_elements = E4
+    names = ['carbon', 'nitrogen', 'oxygen', 'neon', 'argon', 'krypton']
     f = open("variables",'w')
-    f.write('V='+str(V)+'\n'+'R='+str(R))
+    f.write('V='+str(V)+'\n'+'R='+str(R)+'\n'+'energy='+str(energy)+'\n')
+    for i in range(0,len(calibration_elements)):
+        f.write(names[i] + '=' + str(calibration_elements[i]) + '\n') 
     f.close()
 
     if calibrate:
@@ -270,7 +293,7 @@ def plotData():
     title = filename.split('/')
 
     # creating the Matplotlib figure
-    plt.clf()
+    plt.close('all')
     fig, ax = plt.subplots(figsize = (16,9))
     ax.tick_params(which='both', direction='in')
     plt.rcParams.update({'font.size': textSize})
@@ -316,6 +339,7 @@ def massToCharge():
 
     try:
        canvas.get_tk_widget().destroy()
+       plt.close('all')
        mpq = a*np.square(R*B/1000)/(2*V)
        x_min = np.amin(mpq)
        x_max = np.amax(mpq)
@@ -360,6 +384,7 @@ def elementComparison(Z, A, x_label):
 
     try:
        canvas.get_tk_widget().destroy()
+       plt.close('all')
        mpq = a*np.square(R*B/1000)/(2*V)
        fig, ax = plt.subplots(figsize = (16,9))
        ax.tick_params(which='both', direction='in')
@@ -487,6 +512,7 @@ def autoAnalyze():
     resultText = t.get("1.0","end-1c")
     autoanalysis.bind("<Control-s>", lambda eff: saveAutoAnalysisResults(resultText))
 
+#When called, this functions writes the results of the autoAnalyze function to a text file
 def saveAutoAnalysisResults(resultText):
     fileName = str(filedialog.asksaveasfile(initialdir = desktop,title = "Save",filetypes = (("Text Document","*.txt*"),("Text Document","*.txt*"))))
     fileName = fileName.split("'")
@@ -527,23 +553,76 @@ def crossCheck(element, mass, charge):
                     
     return matches, chargeStates
 
+#Primarily for debugging purposes
+def checkboxTest(element):
+    print('The box value is: '+format(element.get()))
+
+#Opens a window that allows the user to make various selections and start a calibration
+def calibration():
+    global energy
+    global calibration_elements
+    #carbon = False
+    #nitrogen = False
+    #oxygen = False
+    options = Toplevel(root)
+    options.geometry('350x350')
+    options.wm_title("Calibration Options")
+    options.configure(bg='white')
+    Label(options, text = 'Select elements that you think\n could be present', bg='white', font = font2).place(relx=0.5, rely=0.1, anchor = CENTER)
+    
+    carbon = IntVar(value=int(calibration_elements[0]))
+    check1 = Checkbutton(options, text="C", variable=carbon, onvalue = 1, offvalue = 0, bg='white', font = font4, command=lambda:checkboxTest(carbon))
+    check1.place(relx=0.4, rely=0.25, anchor=CENTER)
+    
+    nitrogen = IntVar(value=int(calibration_elements[1]))
+    check2 = Checkbutton(options, text="N", variable=nitrogen, bg='white', font = font4, command=lambda:checkboxTest(nitrogen))
+    check2.place(relx=0.4, rely=0.35, anchor=CENTER)
+    
+    oxygen = IntVar(value=int(calibration_elements[2]))
+    check3 = Checkbutton(options, text="O", variable=oxygen, bg='white', font = font4, command=lambda:checkboxTest(oxygen))
+    check3.place(relx=0.4, rely=0.45, anchor=CENTER)
+    
+    neon = IntVar(value=int(calibration_elements[3]))
+    check4 = Checkbutton(options, text="Ne", variable=neon, bg='white', font = font4, command=lambda:checkboxTest(neon))
+    check4.place(relx=0.6, rely=0.25, anchor=CENTER)
+    
+    argon = IntVar(value=int(calibration_elements[4]))
+    check5 = Checkbutton(options, text="Ar", variable=argon, bg='white', font = font4, command=lambda:checkboxTest(argon))
+    check5.place(relx=0.6, rely=0.35, anchor=CENTER)
+    
+    krypton = IntVar(value=int(calibration_elements[5]))
+    check6 = Checkbutton(options, text="Kr", variable=krypton, bg='white', font = font4, command=lambda:checkboxTest(krypton))
+    check6.place(relx=0.6, rely=0.45, anchor=CENTER)
+
+    Label(options, text = 'Beam Energy:', bg='white', font = font2).place(relx=0.5, rely=0.6, anchor=E)
+    E1 = Entry(options, bg='lightcyan', font = font2, width = 6)
+    E1.place(relx=0.5, rely=0.6, anchor=W)
+    E1.insert(0,str(energy))
+    Label(options, text = 'eV/q', bg='white', font=font2).place(relx=0.7, rely=0.6, anchor=W)
+
+    b1 = Button(options, text = 'Run Calibration', relief = 'raised', background='lightblue', activebackground='blue', font = font1, width = 15, height = 2,\
+                command = lambda: [updateSettings(V, R, int(float(E1.get())), [carbon.get(), nitrogen.get(), oxygen.get(), neon.get(), argon.get(), krypton.get()]), multiThreading(), options.destroy()])
+    b1.place(relx=0.5, rely=0.8, anchor = CENTER)
+
+    
+
 #Enables multi-threading so that the calibrateV process does not freeze main GUI
-def threading():
-    t1=Thread(target=calibrateV)
+def multiThreading():
+    t1=threading.Thread(target=calibrateV)
     t1.start()
 
-#Aims to select a value for V that maximizes the number of peaks that align with C, N, O, Ne, Ar
+#Aims to select a value for V that maximizes the number of peaks that align with the elements selected by the user
 def calibrateV():
     global B
     global I
     global V
     global a
     global R
-
-    global calibrate
-
     
+    global calibrate
     calibrate = True
+    global energy
+    global calibration_elements
 
     status = Toplevel(root)
     status.geometry('350x150')
@@ -555,7 +634,12 @@ def calibrateV():
     progress.place(relx=0.5, rely=0.5, anchor=CENTER)
     progress.config(mode = 'determinate', maximum=100, value = 0)
 
-    atoms = ['C','N', 'O', 'Ne', 'Ar']
+    t1 = time.time()
+    atoms = []
+    possible_elements = ['C', 'N', 'O', 'Ne', 'Ar', 'Kr']
+    for i in range(0, len(calibration_elements)):
+        if calibration_elements[i] == 1:
+            atoms.append(possible_elements[i])
     modes = []
     numMatches = []
     for atom in atoms:
@@ -567,26 +651,31 @@ def calibrateV():
             if atom == element:
                 charge=e['charge']
                 mass=e['mass1']
-        fudgeVector = []
         matchVector = []
         chargeStateVector = []
+
+        fudgeArray = np.arange(max(energy-4000,1), energy+1001, dtype=int)
         
-        for fudge in range(1,5000):
-            mpq = a*np.square(R*B/1000)/(2*fudge)
-            q = mass/mpq
+        print(fudgeArray)
+        for fudge in fudgeArray:
+            mpqArray = a*np.square(R*B/1000)/(2*fudge)
+            q = mass/mpqArray
             peak_index = find_peaks(I, height=0)
             peak_q = q[peak_index[0]]
-
+            if fudgeArray[0]==1:
+                interval = (fudgeArray[len(fudgeArray)-1]-(fudgeArray[0]-1))/5
+            else:
+                interval = (fudgeArray[len(fudgeArray)-1]-(fudgeArray[0]))/5
+            start = fudgeArray[0]
             #Steps up progress bar by 4%
-            if fudge == 1000 or fudge == 2000 or fudge == 3000 or fudge == 4000:
-                progress.step(4)
-            
+            if fudge == start+interval or fudge == start+2*interval or fudge == start+3*interval or fudge == start+4*interval:
+                progress.step(20/len(atoms))
+                
             chargeStates = []
             present = False
-            
             for i in range(0, len(peak_q)):
                 for j in range(1, charge):
-                    if abs(peak_q[i]-j) < 0.02:
+                    if abs(peak_q[i]-j) < 0.03:
                         name = atom + str(j) + '+'
                         if len(chargeStates) > 0:
                             present = False
@@ -598,10 +687,8 @@ def calibrateV():
             chargeStateVector.append(chargeStates)
             matches = len(chargeStates)
             matchVector.append(matches)
-            fudgeVector.append(fudge)
 
-            matchArray = np.array(matchVector)
-            fudgeArray = np.array(fudgeVector)
+        matchArray = np.array(matchVector)
         max_index = np.argmax(matchArray)
         possibleMatches = []
         for i in range(0,len(matchArray)):
@@ -619,9 +706,10 @@ def calibrateV():
         print(matchArray[max_index])
         modes.append(mode(roundedMatchesArray)[0][0])
         #Steps up progress bar by 4%
-        progress.step(4)
+        progress.step(20/len(atoms))
     modeArray = np.array(modes)
     print('Setting V='+ str(int(mode(modeArray)[0][0])))
+    print('Total Time: ' + str(time.time()-t1))
     L0.destroy()
     progress.destroy()
     L1 = Label(status, text = 'Calibration Complete', bg='white', font = font2)
@@ -630,7 +718,7 @@ def calibrateV():
     L2.place(relx=0.5, rely=0.5, anchor = CENTER)
 
     V = int(mode(modeArray)[0][0])
-    updateSettings(V, R)
+    updateSettings(V, R, energy, calibration_elements)
 
 
 
@@ -658,7 +746,7 @@ menu.add_cascade(label="File", menu=filemenu)
 filemenu.add_command(label="Import", command=lambda: askopenfile(), accelerator="Ctrl+I")
 filemenu.add_command(label="Save", command=lambda: saveGraph(), accelerator="Ctrl+S")
 filemenu.add_command(label='Settings', command=lambda: Settings())
-filemenu.add_command(label='Calibrate', command=lambda: threading())
+filemenu.add_command(label='Calibrate', command=lambda: calibration())
 filemenu.add_separator()
 filemenu.add_command(label='Exit', command=lambda: quitProgram())
 
