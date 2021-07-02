@@ -32,6 +32,7 @@ import threading
 
 #Defines global variables
 global canvas
+global toolbar
 global filename
 global B
 global I
@@ -278,6 +279,7 @@ def plotData():
     global B
     global I
     global canvas
+    global toolbar
     global plt
     global graph
     global filename
@@ -310,17 +312,20 @@ def plotData():
     canvas = FigureCanvasTkAgg(fig, master = root)  
     canvas.draw()
   
-    # placing the canvas on the Tkinter window
-    canvas.get_tk_widget().pack(side="top",fill='both',expand=True)
+    
+    if graph == True:
+        toolbar.destroy()
+        graph = False
 
     # creating the Matplotlib toolbar
     if graph == False:
-        toolbar = NavigationToolbar2Tk(canvas, root)
+        toolbar = NavigationToolbar2Tk(canvas, root, pack_toolbar=False)
         toolbar.update()
+        toolbar.pack(side=BOTTOM, fill=X)
         graph = True
   
-    # placing the toolbar on the Tkinter window
-    canvas.get_tk_widget().pack()
+    # placing the canvas on the Tkinter window
+    canvas.get_tk_widget().pack(side="top",fill='both',expand=True)
 
 #Creates a plot of current vs. mass-to-charge ratio
 def massToCharge():
@@ -330,6 +335,7 @@ def massToCharge():
     global V
 
     global canvas
+    global toolbar
     global filename
     global graphType
 
@@ -337,8 +343,10 @@ def massToCharge():
 
     title = filename.split('/')
 
+
     try:
        canvas.get_tk_widget().destroy()
+       toolbar.destroy()
        plt.close('all')
        mpq = a*np.square(R*B/1000)/(2*V)
        x_min = np.amin(mpq)
@@ -358,6 +366,11 @@ def massToCharge():
        canvas = FigureCanvasTkAgg(fig, master = root)
        canvas.draw()
 
+       # creating the toolbar and placing it
+       toolbar = NavigationToolbar2Tk(canvas, root, pack_toolbar=False)
+       toolbar.update()
+       toolbar.pack(side=BOTTOM, fill=X)
+
        # placing the canvas on the Tkinter window
        canvas.get_tk_widget().pack(side="top",fill='both',expand=True)
        
@@ -375,6 +388,7 @@ def elementComparison(Z, A, x_label):
     global V
 
     global canvas
+    global toolbar
     global filename
     global graphType
 
@@ -384,6 +398,7 @@ def elementComparison(Z, A, x_label):
 
     try:
        canvas.get_tk_widget().destroy()
+       toolbar.destroy()
        plt.close('all')
        mpq = a*np.square(R*B/1000)/(2*V)
        fig, ax = plt.subplots(figsize = (16,9))
@@ -401,6 +416,11 @@ def elementComparison(Z, A, x_label):
        # creating the Tkinter canvas containing the Matplotlib figure
        canvas = FigureCanvasTkAgg(fig, master = root)
        canvas.draw()
+
+       # creating the toolbar and placing it
+       toolbar = NavigationToolbar2Tk(canvas, root, pack_toolbar=False)
+       toolbar.update()
+       toolbar.pack(side=BOTTOM, fill=X)
 
        # placing the canvas on the Tkinter window
        canvas.get_tk_widget().pack(side="top",fill='both',expand=True)
@@ -729,7 +749,7 @@ root = Tk()
 menu = Menu(root)
 root.config(menu=menu)
 
-root.title("EBIT Ion Beam Analyzer")
+root.title("CUEBIT Spectrum Analyzer")
 root.geometry("1200x768")
 root.configure(bg='white')
 root.protocol("WM_DELETE_WINDOW", quitProgram)
