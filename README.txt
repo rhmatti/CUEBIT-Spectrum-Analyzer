@@ -12,9 +12,9 @@ Function:  This program provides a graphical user interface for quickly importin
 
 Install Instructions
 --------------------
-1. To run, users must have a version of python 3 installed on their machine.
+1. To run, users must have python version 3.9 or newer installed on their machine.
 
-2. In addition to the base install of python 3, the following packages are required:
+2. In addition to the base install of python, the following packages are required:
 	a. Scipy
 		To install: python -m pip install scipy
 
