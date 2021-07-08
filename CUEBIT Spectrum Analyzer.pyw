@@ -1,6 +1,6 @@
-#EBIT Ion Beam Analyzer
+#CUEBIT Spectrum Analyzer
 #Author: Richard Mattish
-#Last Updated: 06/10/2021
+#Last Updated: 07/01/2021
 
 #Function:  This program provides a graphical user interface for quickly importing
 #           EBIT data files and comparing them to several of the most common elements
@@ -21,6 +21,7 @@ from scipy.signal import find_peaks
 from scipy.stats import mode
 import sys
 import os
+import platform
 import time
 import datetime
 from decimal import Decimal
@@ -234,7 +235,10 @@ def updateSettings(E1, E2, E3, E4):
 #Used to import an EBIT data file into the software
 def askopenfile():
     global filename
-    filename = filedialog.askopenfilename(initialdir = desktop,title = "Select file",filetypes = (("all files","*.*"),("all files","*.*")))
+    newfile = filedialog.askopenfilename(initialdir = desktop,title = "Select file",filetypes = (("all files","*.*"),("all files","*.*")))
+    if newfile == '':
+        return
+    filename = newfile
     plotData()
 
 #Lets user save a copy of the matplotlib graph displayed in the software
@@ -753,6 +757,8 @@ root.title("CUEBIT Spectrum Analyzer")
 root.geometry("1200x768")
 root.configure(bg='white')
 root.protocol("WM_DELETE_WINDOW", quitProgram)
+if platform.system() == 'Windows':
+    root.iconbitmap("CSA.ico")
 
 #Creates intro message
 introMessage ='Import a data file to begin'
