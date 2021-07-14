@@ -96,6 +96,8 @@ def About():
     t = Toplevel(root)
     t.wm_title("About")
     t.configure(background='white')
+    if platform.system() == 'Windows':
+        t.iconbitmap("icons/CSA.ico")
     l = Label(t, text = helpMessage, bg='white', font = font2)
     l.pack(side="top", fill="both", expand=True, padx=100, pady=100)
     messageVar = Message(t, text = copyrightMessage, bg='white', fg='blue', font = font2, width = 600)
@@ -106,6 +108,8 @@ def Instructions():
     instructions.geometry('1280x720')
     instructions.wm_title("User Instructions")
     instructions.configure(bg='white')
+    if platform.system() == 'Windows':
+        instructions.iconbitmap("icons/CSA.ico")
     v = Scrollbar(instructions, orient = 'vertical')
     t = Text(instructions, font = font4, bg='white', width = 100, height = 100, wrap = NONE, yscrollcommand = v.set)
     t.insert(END, "*********************************************************************************************************************\n")
@@ -173,6 +177,8 @@ def Settings():
     t = Toplevel(root)
     t.geometry('400x300')
     t.wm_title("Settings")
+    if platform.system() == 'Windows':
+        t.iconbitmap("icons/settings.ico")
     L0 = Label(t, text = 'Settings', font = font3)
     L0.place(relx=0.5, rely=0.15, anchor = CENTER)
     L1 = Label(t, text = 'V:', font = font2)
@@ -258,6 +264,8 @@ def PTable():
     ptable = Toplevel(root)
     ptable.geometry('1920x1080')
     ptable.configure(bg='white')
+    if platform.system() == 'Windows':
+        ptable.iconbitmap("icons/CSA.ico")
     ptable.wm_title('Periodic Table')
     load = Image.open('PeriodicTable.png')
     render = ImageTk.PhotoImage(load)
@@ -440,6 +448,8 @@ def manualEnter():
     newIso = Toplevel(root)
     newIso.geometry('400x300')
     newIso.wm_title("User-Defined Isotope")
+    if platform.system() == 'Windows':
+        newIso.iconbitmap("icons/CSA.ico")
     L4 = Label(newIso, text = 'Enter the information\n for the desired isotope', font = font3)
     L4.place(relx=0.5, rely=0.15, anchor = CENTER)
     L5 = Label(newIso, text = 'Atomic Number, Z:', font = font2)
@@ -463,6 +473,8 @@ def autoAnalyze():
     autoanalysis.geometry('800x600')
     autoanalysis.wm_title("results for Auto-Analysis")
     autoanalysis.configure(bg='white')
+    if platform.system() == 'Windows':
+        autoanalysis.iconbitmap("icons/CSA.ico")
     v = Scrollbar(autoanalysis, orient = 'vertical')
     t = Text(autoanalysis, font = font4, width = 100, height = 100, wrap = NONE, yscrollcommand = v.set)
     
@@ -592,6 +604,8 @@ def calibration():
     options.geometry('350x350')
     options.wm_title("Calibration Options")
     options.configure(bg='white')
+    if platform.system() == 'Windows':
+        options.iconbitmap("icons/calibration.ico")
     Label(options, text = 'Select elements that you think\n could be present', bg='white', font = font2).place(relx=0.5, rely=0.1, anchor = CENTER)
     
     carbon = IntVar(value=int(calibration_elements[0]))
@@ -652,6 +666,8 @@ def calibrateV():
     status.geometry('350x150')
     status.wm_title("Calibration")
     status.configure(bg='white')
+    if platform.system() == 'Windows':
+        status.iconbitmap("icons/calibration.ico")
     L0 = Label(status, text = 'Calibrating...', bg='white', font = font2)
     L0.place(relx=0.5, rely=0.3, anchor = CENTER)
     progress = ttk.Progressbar(status, orient = HORIZONTAL, length = 300)
@@ -666,6 +682,8 @@ def calibrateV():
             atoms.append(possible_elements[i])
     modes = []
     numMatches = []
+    fudgeArray = np.arange(max(energy-4000,1), energy+1001, dtype=int)
+    totalNumMatchesArray = np.zeros(len(fudgeArray),dtype=int)
     for atom in atoms:
         results = []
         with open('json_background.py') as f:
@@ -677,8 +695,6 @@ def calibrateV():
                 mass=e['mass1']
         matchVector = []
         chargeStateVector = []
-
-        fudgeArray = np.arange(max(energy-4000,1), energy+1001, dtype=int)
         
         print(fudgeArray)
         for fudge in fudgeArray:
@@ -713,6 +729,7 @@ def calibrateV():
             matchVector.append(matches)
 
         matchArray = np.array(matchVector)
+        totalNumMatchesArray = np.add(totalNumMatchesArray,matchArray)
         max_index = np.argmax(matchArray)
         possibleMatches = []
         for i in range(0,len(matchArray)):
@@ -732,17 +749,54 @@ def calibrateV():
         #Steps up progress bar by 4%
         progress.step(20/len(atoms))
     modeArray = np.array(modes)
-    print('Setting V='+ str(int(mode(modeArray)[0][0])))
-    print('Total Time: ' + str(time.time()-t1))
-    L0.destroy()
-    progress.destroy()
-    L1 = Label(status, text = 'Calibration Complete', bg='white', font = font2)
-    L1.place(relx=0.5, rely=0.3, anchor = CENTER)
-    L2 = Label(status, text = 'Setting V='+ str(int(mode(modeArray)[0][0])), bg = 'white', font = font4)
-    L2.place(relx=0.5, rely=0.5, anchor = CENTER)
 
-    V = int(mode(modeArray)[0][0])
-    updateSettings(V, R, energy, calibration_elements)
+    print('Max Peaks V: ' + str(fudgeArray[np.argmax(totalNumMatchesArray)]))
+
+    print('Mode V='+ str(int(mode(modeArray)[0][0])))
+    print('Number of mode matches: ' + str(mode(modeArray)[1][0]))
+    print('Total Time: ' + str(time.time()-t1))
+
+    if int(mode(modeArray)[1][0]) > 1:
+        L0.destroy()
+        progress.destroy()
+        L1 = Label(status, text = 'Calibration Complete', bg='white', font = font2)
+        L1.place(relx=0.5, rely=0.3, anchor = CENTER)
+        L2 = Label(status, text = 'Setting V='+ str(int(mode(modeArray)[0][0])), bg = 'white', font = font4)
+        L2.place(relx=0.5, rely=0.5, anchor = CENTER)
+        L3 = Label(status, text = 'High Confidence', bg = 'white', fg = 'green', font = font4)
+        L3.place(relx=0.5, rely=0.8, anchor = CENTER)
+
+        V = int(mode(modeArray)[0][0])
+        print('High Confidence')
+        updateSettings(V, R, energy, calibration_elements)
+    elif int(fudgeArray[np.argmax(totalNumMatchesArray)]) < energy:
+        L0.destroy()
+        progress.destroy()
+        L1 = Label(status, text = 'Calibration Complete', bg='white', font = font2)
+        L1.place(relx=0.5, rely=0.3, anchor = CENTER)
+        L2 = Label(status, text = 'Setting V='+ str(int(fudgeArray[np.argmax(totalNumMatchesArray)])), bg = 'white', font = font4)
+        L2.place(relx=0.5, rely=0.5, anchor = CENTER)
+        L3 = Label(status, text = 'Medium Confidence', bg = 'white', fg = 'orange', font = font4)
+        L3.place(relx=0.5, rely=0.8, anchor = CENTER)
+
+        V = int(fudgeArray[np.argmax(totalNumMatchesArray)])
+        print('Medium Confidence')
+        updateSettings(V, R, energy, calibration_elements)
+
+    else:
+        L0.destroy()
+        progress.destroy()
+        L1 = Label(status, text = 'Calibration Complete', bg='white', font = font2)
+        L1.place(relx=0.5, rely=0.3, anchor = CENTER)
+        L2 = Label(status, text = 'Setting V='+ str(int(modeArray[len(modeArray)-1])), bg = 'white', font = font4)
+        L2.place(relx=0.5, rely=0.5, anchor = CENTER)
+        L3 = Label(status, text = 'Low Confidence', bg = 'white', fg = 'red', font = font4)
+        L3.place(relx=0.5, rely=0.8, anchor = CENTER)
+
+        V = int(modeArray[len(modeArray)-1])
+        print('V='+str(V))
+        print('Low Confidence')
+        updateSettings(V, R, energy, calibration_elements)
 
 
 
@@ -758,7 +812,7 @@ root.geometry("1200x768")
 root.configure(bg='white')
 root.protocol("WM_DELETE_WINDOW", quitProgram)
 if platform.system() == 'Windows':
-    root.iconbitmap("CSA.ico")
+    root.iconbitmap("icons/CSA.ico")
 
 #Creates intro message
 introMessage ='Import a data file to begin'
