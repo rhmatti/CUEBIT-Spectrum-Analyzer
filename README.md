@@ -39,8 +39,8 @@ User Instructions
 	* Select all elements that you wish to use for calibration (usually those that you expect to be present in the spectrum)
 	* Enter the beam energy (drift tube voltage) that was set for that data run
 	* Select "Calibrate". A progress bar will appear. Allow calibration to complete before closing
-	* Once the calibration is marked complete, the returned value for V is displayed along with a confidence level. You may close the window
-	* The offset V has been calibrated
+	* Once the calibration is marked complete, the returned value for V is displayed along with a confidence level
+	* The offset V has been calibrated. You may close the window
 
 		> Note: This method is quicker than manual calibration, but I do not guarantee it is always accurate. Always evaluate it's accuracy yourself afterwards using the Analysis menu's various options, especially for values marked as low confidence!
 
