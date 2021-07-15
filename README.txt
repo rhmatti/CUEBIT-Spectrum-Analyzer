@@ -39,13 +39,16 @@ User Instructions
 4. Perform a calibration of the offset/fudge-factor V
 
 	a. Automatic Calibration:
-		1) Select "Calibrate" from the drop-down File menu (File>Calibrate)
-		2) A separate progress window will open. Allow calibration to complete before closing
-		3) Once the calibration is marked complete, you may close the window
-		4) The offset V has been calibrated!
+		1) Select "Calibrate" from the drop-down File menu (File>Calibrate). A separate options window will open
+		2) Select all elements that you wish to use for calibration (usually those that you expect to be present in the spectrum)
+		3) Enter the beam energy (drift tube voltage) that was set for that data run
+		4) Select "Calibrate". A progress bar will appear. Allow calibration to complete before closing
+		5) Once the calibration is marked complete, the returned value for V is displayed along with a confidence level
+		6) The offset V has been calibrated. You may close the window
 
 		Note: 	This method is quicker than manual calibration, but I do not guarantee it is always accurate.
-			Always evaluate it's accuracy yourself afterwards using the Analysis menu's various options!
+			Always evaluate it's accuracy yourself afterwards using the Analysis menu's various options, 
+			especially for values marked as low confidence!
 
 	b. Manual Calibration:
 		1) Select "Settings" from the drop-down File menu (File>Settings)
