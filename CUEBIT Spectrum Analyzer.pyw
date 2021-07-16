@@ -1,14 +1,16 @@
 #CUEBIT Spectrum Analyzer
 #Author: Richard Mattish
-#Last Updated: 07/01/2021
+#Last Updated: 07/16/2021
 
-#Function:  This program provides a graphical user interface for quickly importing
-#           EBIT data files and comparing them to several of the most common elements
-#           and gases, as well as the option to define your own isotope.
+#Function:  This program provides a graphical user interface for importing
+#           and analyzing EBIT data files to identify isotopes present in the
+#           spectrum and the exporting of results
 
 
 #Imports necessary packages
+from logging import root
 import matplotlib
+from scipy.signal.waveforms import square
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
@@ -33,6 +35,8 @@ import threading
 
 #Defines global variables
 global canvas
+global fig
+global ax
 global toolbar
 global filename
 global B
@@ -40,6 +44,9 @@ global I
 global a
 global R
 global graph
+global shift_is_held
+global labels
+global count
 global calibrate_run
 global modes
 global graphType
@@ -51,6 +58,8 @@ calibrate_run = 0
 modes = []
 graphType = 0
 calibrate = False
+shift_is_held = False
+labels = []
 
 
 #Defines location of the Desktop as well as font and text size for use in the software
@@ -245,6 +254,7 @@ def askopenfile():
     if newfile == '':
         return
     filename = newfile
+    eraseAll()
     plotData()
 
 #Lets user save a copy of the matplotlib graph displayed in the software
@@ -353,10 +363,9 @@ def massToCharge():
 
     graphType = 1
 
-    title = filename.split('/')
-
 
     try:
+       title = filename.split('/')
        canvas.get_tk_widget().destroy()
        toolbar.destroy()
        plt.close('all')
@@ -366,6 +375,9 @@ def massToCharge():
        fig, ax = plt.subplots(figsize = (16,9))
        ax.tick_params(which='both', direction='in')
        plt.rcParams.update({'font.size': textSize})
+       if len(labels) > 0:
+            for label in labels:
+                plt.text(label[0], label[1]+0.2, label[2], fontsize = 10, ha='center')
        for label in (ax.get_xticklabels() + ax.get_yticklabels()):
            label.set_fontsize(textSize)
        plt.plot(mpq, I, color = (0.368417,0.506779,0.709798), linestyle = '-', linewidth = 2)
@@ -386,7 +398,7 @@ def massToCharge():
        # placing the canvas on the Tkinter window
        canvas.get_tk_widget().pack(side="top",fill='both',expand=True)
        
-    except:
+    except NameError:
         helpMessage ='Please import a data file first.' 
         messageVar = Message(root, text = helpMessage, font = font2, width = 600) 
         messageVar.config(bg='lightgreen')
@@ -400,22 +412,26 @@ def elementComparison(Z, A, x_label):
     global V
 
     global canvas
+    global fig
+    global ax
     global toolbar
     global filename
     global graphType
+    global labels
 
     graphType = str(Z)+','+str(A)+','+x_label
 
-    title = filename.split('/')
+    
 
     try:
+       title = filename.split('/')
        canvas.get_tk_widget().destroy()
        toolbar.destroy()
        plt.close('all')
        mpq = a*np.square(R*B/1000)/(2*V)
        fig, ax = plt.subplots(figsize = (16,9))
        ax.tick_params(which='both', direction='in')
-       plt.rcParams.update({'font.size': textSize})
+       plt.rcParams.update({'font.size': textSize})                
        for label in (ax.get_xticklabels() + ax.get_yticklabels()):
            label.set_fontsize(textSize)
        for xc in range(1,Z+1):
@@ -425,6 +441,10 @@ def elementComparison(Z, A, x_label):
        plt.ylabel('Current (pA)',fontsize=textSize)
        plt.title(title[len(title)-1])
        plt.xlim([0.5,Z+0.5])
+       y_min, y_max = plt.gca().get_ylim()
+       if len(labels) > 0:
+            for label in labels:
+                plt.text(A/label[0], label[1]+0.02*y_max, label[2], fontsize = 10, ha='center')
        # creating the Tkinter canvas containing the Matplotlib figure
        canvas = FigureCanvasTkAgg(fig, master = root)
        canvas.draw()
@@ -436,12 +456,129 @@ def elementComparison(Z, A, x_label):
 
        # placing the canvas on the Tkinter window
        canvas.get_tk_widget().pack(side="top",fill='both',expand=True)
+       fig.canvas.mpl_connect('button_press_event', lambda event: onclick(event, Z, A))
+       fig.canvas.mpl_connect('key_press_event', onkeypress)
+       fig.canvas.mpl_connect('key_release_event', onkeyrelease)
+
+       clickInstructions = 'Double Click: Add Label\t\tCtrl+Z: Undo\t\tCtr+A: Clear All'
+
+       clickMessage = Message(root, text = clickInstructions, font = font4, width = 700)
+       clickMessage.config(bg='white', fg='grey')
+       clickMessage.place(relx = 0.5, rely = 0.02, anchor = CENTER)
        
-    except:
+    except NameError:
         helpMessage ='Please import a data file first.' 
         messageVar = Message(root, text = helpMessage, font = font2, width = 600) 
         messageVar.config(bg='lightgreen')
         messageVar.place(relx = 0, rely = 1, anchor = SW)
+
+def onclick(event, Z, A):
+    present = False
+    if event.xdata is None:
+        return
+    if event.dblclick:
+        y_min, y_max = plt.gca().get_ylim()
+        with open('json_background.py') as f:
+            J = json.load(f)
+        for j in J['elements']:
+            if j['charge'] == Z:
+                element=j['name']
+        q = int(round(event.xdata,0))
+        peak_index = find_peaks(I, height=0)[0]
+        deltas = abs(B[peak_index]-(1000/R)*np.sqrt(A/q*2*V/a))
+        min_delta_index = np.argmin(deltas)
+        peak_I = I[peak_index[min_delta_index]]
+        global labels
+        label = [A/int(round(event.xdata,0)), peak_I, element+'$^{'+str(q)+'+}$']
+        global count
+        global canvas
+        if len(labels) > 0:
+            count = 0
+            for entry in labels:
+                if label[0]==entry[0]:
+                    present = True
+                    if label[2]==entry[2]:
+                        return
+                    else:
+                        entries = entry[2].split(',')
+                        for i in entries:
+                            if label[2]==i:
+                                return
+                        charges = []
+                        for i in entries:
+                            charge = int(i.split('{')[1].split('+')[0])
+                            charges.append([charge, i])
+                            print(charges)
+                        charges.append([q, label[2]])
+                        charges = orderMatrix(charges, 0)
+                        entry[2]=''
+                        for j in charges:
+                            if entry[2] != '':
+                                entry[2] = entry[2]+','+j[1]
+                            else:
+                                entry[2]=j[1]
+                        del ax.texts[count]
+                        plt.text(A/label[0]+0.02, label[1]+0.02*y_max, entry[2], fontsize = 10, ha='center')
+                        canvas.draw()
+                        labels.pop(count)
+                        labels.append(entry)
+                        return
+                count = count + 1
+        if present == False:
+            labels.append(label)
+            plt.text(A/label[0]+0.02, label[1]+0.02*y_max, label[2], fontsize = 10, ha='center')
+        canvas.draw()
+
+def onkeypress(event):
+    if event.key == 'shift':
+        global shift_is_held
+        shift_is_held = True
+
+def onkeyrelease(event):
+    if event.key == 'shift':
+        global shift_is_held
+        shift_is_held = False
+
+def undo():
+    global labels
+    global canvas
+    try:
+        labels.pop()
+        del ax.texts[len(ax.texts)-1]
+        canvas.draw()
+    except IndexError:
+        return
+
+def eraseAll():
+    global labels
+    global canvas
+    try:
+        labels = []
+        ax.texts = []
+        canvas.draw()
+    except NameError:
+        return
+
+#Sorts all columns of a matrix by a single column
+def orderMatrix(matrix, column):
+    i = 0
+    a = len(matrix)
+    orderedMatrix = []
+    while i < len(matrix):
+        j = 0
+        smallest = True
+        while j < len(matrix) and smallest == True:
+            if matrix[i][column] <= matrix[j][column]:
+                smallest = True
+                j = j + 1
+            else:
+                smallest = False
+        if smallest == True:
+            orderedMatrix.append(matrix.pop(i))
+            i = 0
+        else:
+            i = i + 1
+    return orderedMatrix
 
 #Allows the user to manually define an isotope by giving the isotopic mass and atomic number
 def manualEnter():
@@ -591,7 +728,7 @@ def crossCheck(element, mass, charge):
 
 #Primarily for debugging purposes
 def checkboxTest(element):
-    print('The box value is: '+format(element.get()))
+    return
 
 #Opens a window that allows the user to make various selections and start a calibration
 def calibration():
@@ -681,7 +818,6 @@ def calibrateV():
         if calibration_elements[i] == 1:
             atoms.append(possible_elements[i])
     modes = []
-    numMatches = []
     fudgeArray = np.arange(max(energy-4000,1), energy+1001, dtype=int)
     totalNumMatchesArray = np.zeros(len(fudgeArray),dtype=int)
     for atom in atoms:
@@ -750,40 +886,63 @@ def calibrateV():
         progress.step(20/len(atoms))
     modeArray = np.array(modes)
 
-    print('Max Peaks V: ' + str(fudgeArray[np.argmax(totalNumMatchesArray)]))
+    roundedModeV = int(mode(modeArray)[0][0])
+    numModeMatches = int(mode(modeArray)[1][0])
+
+    maxMatches = totalNumMatchesArray[np.argmax(totalNumMatchesArray)]
+    maxMatchV = fudgeArray[np.where(totalNumMatchesArray==maxMatches)[0]]
+    roundedMaxMatchV = int(mode(np.round(maxMatchV/10)*10)[0])
+
+    print('Max Peaks V: ' + str(roundedMaxMatchV))
 
     print('Mode V='+ str(int(mode(modeArray)[0][0])))
     print('Number of mode matches: ' + str(mode(modeArray)[1][0]))
     print('Total Time: ' + str(time.time()-t1))
 
-    if int(mode(modeArray)[1][0]) > 1:
+
+    if numModeMatches > 1 and abs(roundedModeV-roundedMaxMatchV) < 20:
         L0.destroy()
         progress.destroy()
         L1 = Label(status, text = 'Calibration Complete', bg='white', font = font2)
         L1.place(relx=0.5, rely=0.3, anchor = CENTER)
-        L2 = Label(status, text = 'Setting V='+ str(int(mode(modeArray)[0][0])), bg = 'white', font = font4)
+        L2 = Label(status, text = 'Setting V='+ str(roundedModeV), bg = 'white', font = font4)
         L2.place(relx=0.5, rely=0.5, anchor = CENTER)
         L3 = Label(status, text = 'High Confidence', bg = 'white', fg = 'green', font = font4)
         L3.place(relx=0.5, rely=0.8, anchor = CENTER)
 
-        V = int(mode(modeArray)[0][0])
+        V = roundedModeV
         print('High Confidence')
         updateSettings(V, R, energy, calibration_elements)
-    elif int(fudgeArray[np.argmax(totalNumMatchesArray)]) < energy:
+
+    elif numModeMatches > 1:
         L0.destroy()
         progress.destroy()
         L1 = Label(status, text = 'Calibration Complete', bg='white', font = font2)
         L1.place(relx=0.5, rely=0.3, anchor = CENTER)
-        L2 = Label(status, text = 'Setting V='+ str(int(fudgeArray[np.argmax(totalNumMatchesArray)])), bg = 'white', font = font4)
+        L2 = Label(status, text = 'Setting V='+ str(roundedModeV), bg = 'white', font = font4)
+        L2.place(relx=0.5, rely=0.5, anchor = CENTER)
+        L3 = Label(status, text = 'Medium Confidence', bg = 'white', fg = 'yellow', font = font4)
+        L3.place(relx=0.5, rely=0.8, anchor = CENTER)
+
+        V = roundedModeV
+        print('Medium')
+        updateSettings(V, R, energy, calibration_elements)
+
+    elif roundedMaxMatchV < energy:
+        L0.destroy()
+        progress.destroy()
+        L1 = Label(status, text = 'Calibration Complete', bg='white', font = font2)
+        L1.place(relx=0.5, rely=0.3, anchor = CENTER)
+        L2 = Label(status, text = 'Setting V='+ str(roundedMaxMatchV), bg = 'white', font = font4)
         L2.place(relx=0.5, rely=0.5, anchor = CENTER)
         L3 = Label(status, text = 'Medium Confidence', bg = 'white', fg = 'orange', font = font4)
         L3.place(relx=0.5, rely=0.8, anchor = CENTER)
 
-        V = int(fudgeArray[np.argmax(totalNumMatchesArray)])
+        V = roundedMaxMatchV
         print('Medium Confidence')
         updateSettings(V, R, energy, calibration_elements)
 
-    else:
+    elif int(modeArray[len(modeArray)-1]) < energy:
         L0.destroy()
         progress.destroy()
         L1 = Label(status, text = 'Calibration Complete', bg='white', font = font2)
@@ -794,6 +953,21 @@ def calibrateV():
         L3.place(relx=0.5, rely=0.8, anchor = CENTER)
 
         V = int(modeArray[len(modeArray)-1])
+        print('V='+str(V))
+        print('Low Confidence')
+        updateSettings(V, R, energy, calibration_elements)
+    
+    else:
+        L0.destroy()
+        progress.destroy()
+        L1 = Label(status, text = 'Calibration Complete', bg='white', font = font2)
+        L1.place(relx=0.5, rely=0.3, anchor = CENTER)
+        L2 = Label(status, text = 'Setting V='+ str(roundedModeV), bg = 'white', font = font4)
+        L2.place(relx=0.5, rely=0.5, anchor = CENTER)
+        L3 = Label(status, text = 'Low Confidence', bg = 'white', fg = 'red', font = font4)
+        L3.place(relx=0.5, rely=0.8, anchor = CENTER)
+
+        V = roundedModeV
         print('V='+str(V))
         print('Low Confidence')
         updateSettings(V, R, energy, calibration_elements)
@@ -865,6 +1039,8 @@ root.bind_all("<Control-i>", lambda eff: askopenfile())
 root.bind("<Control-s>", lambda eff: saveGraph())
 root.bind_all("<Control-r>", lambda eff: autoAnalyze())
 root.bind_all("<Control-p>", lambda eff: PTable())
+root.bind("<Control-z>", lambda eff: undo())
+root.bind("<Control-a>", lambda eff: eraseAll())
 
 
 root.mainloop()

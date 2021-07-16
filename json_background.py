@@ -270,7 +270,7 @@
                     "percent4": 0.115,
                     "mass5": 79.916,
                     "percent5": 0.023,
-                    "charge": 26
+                    "charge": 36
                 }
               ]
 }                                                          
