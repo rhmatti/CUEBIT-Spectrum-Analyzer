@@ -1,6 +1,6 @@
 #CUEBIT Spectrum Analyzer
 #Author: Richard Mattish
-#Last Updated: 07/16/2021
+#Last Updated: 11/11/2021
 
 #Function:  This program provides a graphical user interface for importing
 #           and analyzing EBIT data files to identify isotopes present in the
@@ -39,6 +39,7 @@ global fig
 global ax
 global toolbar
 global filename
+global work_dir
 global B
 global I
 global a
@@ -85,14 +86,17 @@ try:
     argon = int(variables[7].split('=')[1])
     krypton = int(variables[8].split('=')[1])
     calibration_elements = [carbon, nitrogen, oxygen, neon, argon, krypton]
+    work_dir = str(variables[9].split('=')[1])
 except:
     V = 3330
     R = 0.35
     energy = 4500
     calibration_elements = [1, 1, 1, 0, 1, 0]
+    work_dir = desktop
     f = open("variables",'w')
     f.write('V='+str(V)+'\n'+'R='+str(R)+'\n'+'energy='+str(energy)+'\n')
-    f.write('carbon=1\nnitrogen=1\noxygen=1\nneon=0\nargon=1\nkrypton=0')
+    f.write('carbon=1\nnitrogen=1\noxygen=1\nneon=0\nargon=1\nkrypton=0\n')
+    f.write(f'work_dir={desktop}')
     f.close()
     
 #Charge to mass ratio of a proton
@@ -228,6 +232,7 @@ def updateSettings(E1, E2, E3, E4):
     f.write('V='+str(V)+'\n'+'R='+str(R)+'\n'+'energy='+str(energy)+'\n')
     for i in range(0,len(calibration_elements)):
         f.write(names[i] + '=' + str(calibration_elements[i]) + '\n') 
+    f.write(f'work_dir={work_dir}')
     f.close()
 
     if calibrate:
@@ -250,12 +255,23 @@ def updateSettings(E1, E2, E3, E4):
 #Used to import an EBIT data file into the software
 def askopenfile():
     global filename
-    newfile = filedialog.askopenfilename(initialdir = desktop,title = "Select file",filetypes = (("all files","*.*"),("all files","*.*")))
+    global work_dir
+    try:
+        newfile = filedialog.askopenfilename(initialdir = work_dir,title = "Select file",filetypes = (("all files","*.*"),("all files","*.*")))
+    except:
+        newfile = filedialog.askopenfilename(initialdir = desktop,title = "Select file",filetypes = (("all files","*.*"),("all files","*.*")))
     if newfile == '':
         return
     filename = newfile
+    folders = newfile.split('/')
+    work_dir = ''
+    for i in range(0,len(folders)-1):
+        work_dir = f'{work_dir}{folders[i]}/'
+
+    updateSettings(V, R, energy, calibration_elements)
     eraseAll()
-    plotData()
+    #plotData()
+    getData()
 
 #Lets user save a copy of the matplotlib graph displayed in the software
 def saveGraph():
@@ -295,59 +311,62 @@ def getData():
     data = np.genfromtxt(filename)
     B = data[:,1]
     I = data[:,2]
+    plotData()
 
-#Creates a plot of the raw EBIT data for current vs. B-field
 def plotData():
-    global B
-    global I
     global canvas
     global toolbar
     global plt
     global graph
-    global filename
+    global graphType
+
+    graphType = 0
 
     try:
         canvas.get_tk_widget().destroy()
+        toolbar.destroy()
+        plt.close('all')
     except:
         pass
-    getData()
-    x_min = np.amin(B)
-    x_max = np.amax(B)
 
-    title = filename.split('/')
+    try:
+       title = filename.split('/')
+       x_min = np.amin(B)
+       x_max = np.amax(B)
+       # creating the Matplotlib figure
+       fig, ax = plt.subplots(figsize = (16,9))
+       ax.tick_params(which='both', direction='in')
+       plt.rcParams.update({'font.size': textSize})
+       if len(labels) > 0:
+            for label in labels:
+                label_x_pos = np.sqrt(label[0]*2*V/a)*1000/R
+                plt.text(label_x_pos, label[1]+0.2, label[2], fontsize = 10, ha='center')
+       for label in (ax.get_xticklabels() + ax.get_yticklabels()):
+           label.set_fontsize(textSize)
+       plt.plot(B, I, color = (0.368417,0.506779,0.709798), linestyle = '-', linewidth = 2)
+       plt.xlim([x_min,x_max])
+       plt.xlabel('Magnetic Field (mT)',fontsize=textSize)
+       plt.ylabel('Current (pA)',fontsize=textSize)
+       plt.title(title[len(title)-1])
 
-    # creating the Matplotlib figure
-    plt.close('all')
-    fig, ax = plt.subplots(figsize = (16,9))
-    ax.tick_params(which='both', direction='in')
-    plt.rcParams.update({'font.size': textSize})
-    for label in (ax.get_xticklabels() + ax.get_yticklabels()):
-            label.set_fontsize(textSize)
-    plt.plot(B, I, color = (0.368417,0.506779,0.709798), linestyle = '-', linewidth = 2)
-    plt.xlim([x_min,x_max])
-    plt.xlabel('Magnetic Field (mT)',fontsize=textSize)
-    plt.ylabel('Current (pA)',fontsize=textSize)
-    plt.title(title[len(title)-1])
+       # creating the Tkinter canvas containing the Matplotlib figure
+       canvas = FigureCanvasTkAgg(fig, master = root)
+       canvas.draw()
 
-    # creating the Tkinter canvas
-    # containing the Matplotlib figure
-    canvas = FigureCanvasTkAgg(fig, master = root)  
-    canvas.draw()
-  
+       # creating the toolbar and placing it
+       toolbar = NavigationToolbar2Tk(canvas, root, pack_toolbar=False)
+       toolbar.update()
+       toolbar.pack(side=BOTTOM, fill=X)
+
+       # placing the canvas on the Tkinter window
+       canvas.get_tk_widget().pack(side="top",fill='both',expand=True)
+       
+    except NameError:
+        helpMessage ='Please import a data file first.' 
+        messageVar = Message(root, text = helpMessage, font = font2, width = 600) 
+        messageVar.config(bg='lightgreen')
+        messageVar.place(relx = 0, rely = 1, anchor = SW)
     
-    if graph == True:
-        toolbar.destroy()
-        graph = False
-
-    # creating the Matplotlib toolbar
-    if graph == False:
-        toolbar = NavigationToolbar2Tk(canvas, root, pack_toolbar=False)
-        toolbar.update()
-        toolbar.pack(side=BOTTOM, fill=X)
-        graph = True
-  
-    # placing the canvas on the Tkinter window
-    canvas.get_tk_widget().pack(side="top",fill='both',expand=True)
 
 #Creates a plot of current vs. mass-to-charge ratio
 def massToCharge():
@@ -1008,6 +1027,7 @@ filemenu.add_command(label='Exit', command=lambda: quitProgram())
 analysismenu = Menu(menu, tearoff=0)
 menu.add_cascade(label='Analysis', menu=analysismenu)
 analysismenu.add_command(label='Auto-Analyze', command= lambda: autoAnalyze(), accelerator="Ctrl+R")
+analysismenu.add_command(label='I vs B', command= lambda: plotData())
 analysismenu.add_command(label='A/q', command= lambda: massToCharge())
 analysismenu.add_separator()
 analysismenu.add_command(label='C', command= lambda: elementComparison(6, 12, "Carbon-12"))
