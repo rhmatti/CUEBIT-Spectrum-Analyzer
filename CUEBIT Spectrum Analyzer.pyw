@@ -1,6 +1,6 @@
 #CUEBIT Spectrum Analyzer
 #Author: Richard Mattish
-#Last Updated: 11/15/2021
+#Last Updated: 11/17/2021
 
 #Function:  This program provides a graphical user interface for importing
 #           and analyzing EBIT data files to identify isotopes present in the
@@ -9,7 +9,6 @@
 
 #Imports necessary packages
 import matplotlib
-from scipy.signal.waveforms import square
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
@@ -24,9 +23,10 @@ import platform
 import time
 from tkinter import filedialog
 from PIL import ImageTk, Image
-import json
 import threading
 import webbrowser
+from mendeleev.fetch import fetch_table
+import pandas as pd
 
 
 #Defines location of the Desktop as well as font and text size for use in the software
@@ -68,6 +68,10 @@ def startProgram(root=None):
 
 class CSA:
     def __init__(self):
+        #Loads elemental information from periodic table
+        t1=threading.Thread(target=self.load_Ptable)
+        t1.start()
+
         #Defines global variables
         self.canvas = None
         self.fig = None
@@ -122,12 +126,23 @@ class CSA:
             f.write(f'work_dir={self.work_dir}')
             f.close()
 
+    def load_Ptable(self):
+        self.ptable = fetch_table('elements')
+        self.isotopes = fetch_table('isotopes', index_col='id')
+        cols = ['atomic_number', 'symbol']
+        self.ptable = self.ptable[cols]
+        cols = ['atomic_number', 'mass', 'abundance']
+        self.isotopes = self.isotopes[cols]
+
+        merged = pd.merge(self.ptable, self.isotopes, how='outer', on='atomic_number')
+        self.isotopes = merged[merged['mass'].notnull()]
+
 
     #Opens About Window with description of software
     def About(self):
         name = "CUEBIT Spectrum Analyzer"
-        version = 'Version: 2.0.0'
-        date = 'Date: 11/15/2021'
+        version = 'Version: 2.1.0'
+        date = 'Date: 11/17/2021'
         support = 'Support: '
         url = 'https://github.com/rhmatti/CUEBIT-Spectrum-Analyzer'
         copyrightMessage ='Copyright © 2021 Richard Mattish All Rights Reserved.'
@@ -266,7 +281,7 @@ class CSA:
 
         if self.calibrate:
             print("I should see this")
-            calibrate = False
+            self.calibrate = False
             sys.exit()
 
         if self.graphType == 0:
@@ -331,9 +346,23 @@ class CSA:
         self.root.destroy()
 
     def getData(self):
-        data = np.genfromtxt(self.filename)
-        self.B = data[:,1]
-        self.I = data[:,2]
+        inputFile = open(self.filename, "r")
+        inputFile = inputFile.readlines()
+        start_line = 0
+        header = False
+        i = 0
+        while i < len(inputFile) and not header:
+            if inputFile[i] == 'Timestamp (s)\tMagnetic Field (T)\tFC2 Current (A)\n':
+                start_line = i + 1
+                header = True
+            i = i + 1
+        data = np.genfromtxt(self.filename, delimiter='\t', skip_header=start_line)
+        if header == True:
+            self.B = data[:,1]*10**3
+            self.I = data[:,2]*10**12
+        else:
+            self.B = data[:,1]
+            self.I = data[:,2]
         self.plotData()
 
     def plotData(self):
@@ -439,10 +468,10 @@ class CSA:
             self.toolbar.destroy()
             plt.close('all')
             mpq = self.a*np.square(self.R*self.B/1000)/(2*self.V)
-            fig, ax = plt.subplots(figsize = (16,9))
-            ax.tick_params(which='both', direction='in')
+            fig, self.ax = plt.subplots(figsize = (16,9))
+            self.ax.tick_params(which='both', direction='in')
             plt.rcParams.update({'font.size': textSize})                
-            for label in (ax.get_xticklabels() + ax.get_yticklabels()):
+            for label in (self.ax.get_xticklabels() + self.ax.get_yticklabels()):
                 label.set_fontsize(textSize)
             for xc in range(1,Z+1):
                 plt.axvline(x=xc, color='black', linestyle='--', linewidth = 1)
@@ -488,11 +517,8 @@ class CSA:
             return
         if event.dblclick:
             y_min, y_max = plt.gca().get_ylim()
-            with open('json_background.py') as f:
-                J = json.load(f)
-            for j in J['elements']:
-                if j['charge'] == Z:
-                    element=j['name']
+            matches = self.isotopes.loc[self.isotopes['atomic_number']==Z]
+            element = matches['symbol'].iloc[0]
             q = int(round(event.xdata,0))
             peak_index = find_peaks(self.I, height=0)[0]
             deltas = abs(self.B[peak_index]-(1000/self.R)*np.sqrt(A/q*2*self.V/self.a))
@@ -598,23 +624,26 @@ class CSA:
         t = Text(autoanalysis, font = font4, width = 100, height = 100, wrap = NONE, yscrollcommand = v.set)
         
         results = []
-        with open('json_background.py') as f:
-            J = json.load(f)
-        for a in J['elements']:#finds element in json file and checks if the input is the same
-            element=a['name']
-            charge=a['charge']
-            mass1=a['mass1']
-            mass2=a['mass2']
-            mass3=a['mass3']
-            mass4=a['mass4']
-            mass5=a['mass5']
 
-            massVector = [mass1, mass2, mass3, mass4, mass5]
+        for Z in range(1,118):
+            charge = Z
+            matches = self.isotopes.loc[self.isotopes['atomic_number']==Z]
+            element = matches['symbol'].iloc[0]
+            massVector = []
+            abundVector = []
 
-            for mass in massVector:
+            for i in range(0, len(matches)):
+                mass = matches['mass'].iloc[i]
+                abund = matches['abundance'].iloc[i]
+                massVector.append(mass)
+                abundVector.append(abund)
+
+            for i in range(0, len(massVector)):
+                mass = massVector[i]
+                abundance = abundVector[i]
                 if mass > 0:
                     matches, chargeStates = self.crossCheck(element, mass, charge)
-                    result = [element, mass, charge, matches, chargeStates]
+                    result = [element, mass, charge, matches, chargeStates, abundance]
                     results.append(result)
 
         veryLikely = []
@@ -634,10 +663,11 @@ class CSA:
 
         t.insert(END, "Very Likely:\n-------------------------\n")
         for result in veryLikely:
-            t.insert(END, 'Isotope: ' + result[0] + '-' + str(int(round(result[1],0))) + '\n')
+            t.insert(END, f'Isotope: {result[0]}-{int(round(result[1],0))}\n')
             t.insert(END, 'Matches: ')
             for chargeState in result[4]:
                 t.insert(END, chargeState + '     ')
+            t.insert(END, f'\nAbundance: {round(result[5]*100,1)}%')
             t.insert(END, '\n\n')
 
 
@@ -647,6 +677,7 @@ class CSA:
             t.insert(END, 'Matches: ')
             for chargeState in result[4]:
                 t.insert(END, chargeState + '     ')
+            t.insert(END, f'\nAbundance: {round(result[5]*100,1)}%')
             t.insert(END, '\n\n')
 
         t.insert(END, "\n\nUnlikely:\n-------------------------\n")
@@ -655,11 +686,13 @@ class CSA:
             t.insert(END, 'Matches: ')
             for chargeState in result[4]:
                 t.insert(END, chargeState + '     ')
+            t.insert(END, f'\nAbundance: {round(result[5]*100,1)}%')
             t.insert(END, '\n\n')
 
         t.insert(END, "\n\nNone:\n-------------------------\n")
         for result in none:
-            t.insert(END, 'Isotope: ' + result[0] + '-' + str(int(round(result[1],0))) + '\n\n')
+            t.insert(END, 'Isotope: ' + result[0] + '-' + str(int(round(result[1],0))))
+            t.insert(END, f'\nAbundance: {round(result[5]*100,1)}%\n\n')
                         
         t.pack(side=TOP, fill=X)
         v.config(command=t.yview)
@@ -783,15 +816,24 @@ class CSA:
         modes = []
         fudgeArray = np.arange(max(self.energy-4000,1), self.energy+1001, dtype=int)
         totalNumMatchesArray = np.zeros(len(fudgeArray),dtype=int)
+
         for atom in atoms:
-            results = []
-            with open('json_background.py') as f:
-                J = json.load(f)
-            for e in J['elements']:#finds element in json file and checks if the input is the same
-                element=e['name']
-                if atom == element:
-                    charge=e['charge']
-                    mass=e['mass1']
+            matches = self.isotopes.loc[self.isotopes['symbol']==atom]
+            print(matches)
+
+            massVector = []
+            abundVector = []
+            for i in range(0, len(matches)):
+                mass = matches['mass'].iloc[i]
+                abund = matches['abundance'].iloc[i]
+                massVector.append(mass)
+                abundVector.append(abund)
+            
+            massArray = np.array(massVector)
+            abundArray = np.array(abundVector)
+            mass = massArray[np.argmax(abundArray)]
+            charge = matches['atomic_number'].iloc[0]
+
             matchVector = []
             chargeStateVector = []
             
