@@ -36,6 +36,7 @@ font2 = ('Helvetica', 14)
 font3 = ('Helvetica', 18)
 font4 = ('Helvetica', 12)
 textSize = 20
+first = True
 
 #Opens a url in a new tab in the default webbrowser
 def callback(url):
@@ -126,6 +127,8 @@ class CSA:
             f.write(f'work_dir={self.work_dir}')
             f.close()
 
+
+        
     def load_Ptable(self):
         self.ptable = fetch_table('elements')
         self.isotopes = fetch_table('isotopes', index_col='id')
@@ -141,8 +144,8 @@ class CSA:
     #Opens About Window with description of software
     def About(self):
         name = "CUEBIT Spectrum Analyzer"
-        version = 'Version: 2.1.0'
-        date = 'Date: 11/17/2021'
+        version = 'Version: 2.1.1'
+        date = 'Date: 11/23/2021'
         support = 'Support: '
         url = 'https://github.com/rhmatti/CUEBIT-Spectrum-Analyzer'
         copyrightMessage ='Copyright © 2021 Richard Mattish All Rights Reserved.'
@@ -152,7 +155,11 @@ class CSA:
         t.resizable(False, False)
         t.configure(background='white')
         if platform.system() == 'Windows':
-            t.iconbitmap("icons/CSA.ico")
+            try:
+                t.iconbitmap("icons/CSA.ico")
+            except TclError:
+                print('Program started remotely by another program...')
+                print('No icons will be used')
         l1 = Label(t, text = name, bg='white', fg='blue', font=font2)
         l1.place(relx = 0.15, rely = 0.14, anchor = W)
         l2 = Label(t, text = version, bg='white', font=font4)
@@ -174,7 +181,11 @@ class CSA:
         instructions.wm_title("User Instructions")
         instructions.configure(bg='white')
         if platform.system() == 'Windows':
-            instructions.iconbitmap("icons/CSA.ico")
+            try:
+                instructions.iconbitmap("icons/CSA.ico")
+            except TclError:
+                print('Program started remotely by another program...')
+                print('No icons will be used')
         v = Scrollbar(instructions, orient = 'vertical')
         t = Text(instructions, font = font4, bg='white', width = 100, height = 100, wrap = NONE, yscrollcommand = v.set)
         t.insert(END, "*********************************************************************************************************************\n")
@@ -240,7 +251,11 @@ class CSA:
         t.geometry('400x300')
         t.wm_title("Settings")
         if platform.system() == 'Windows':
-            t.iconbitmap("icons/settings.ico")
+            try:
+                t.iconbitmap("icons/settings.ico")
+            except TclError:
+                print('Program started remotely by another program...')
+                print('No icons will be used')
         t.configure(bg='grey95')
         L0 = Label(t, text = 'Settings', font = font3)
         L0.place(relx=0.5, rely=0.15, anchor = CENTER)
@@ -332,7 +347,15 @@ class CSA:
         ptable.geometry('1920x1080')
         ptable.configure(bg='white')
         if platform.system() == 'Windows':
-            ptable.iconbitmap("icons/CSA.ico")
+            try:
+                ptable.iconbitmap("icons/CSA.ico")
+            except TclError:
+                print('Program started remotely by another program...')
+                print('This functionality not possible when program is accessed remotely')
+                message = Label(ptable, text='Cannot view periodic table when program was\n accessed remotely by another program', font=font3, bg = 'white')
+                message.place(relx=0.5, rely=0.5, anchor = CENTER)
+                return
+
         ptable.wm_title('Periodic Table')
         load = Image.open('PeriodicTable.png')
         render = ImageTk.PhotoImage(load)
@@ -345,8 +368,11 @@ class CSA:
         self.root.quit()
         self.root.destroy()
 
-    def getData(self):
+    def getData(self, filename = None):
+        if filename != None:
+            self.filename = filename
         inputFile = open(self.filename, "r")
+            
         inputFile = inputFile.readlines()
         start_line = 0
         header = False
@@ -594,7 +620,11 @@ class CSA:
         newIso.geometry('400x300')
         newIso.wm_title("User-Defined Isotope")
         if platform.system() == 'Windows':
-            newIso.iconbitmap("icons/CSA.ico")
+            try:
+                newIso.iconbitmap("icons/CSA.ico")
+            except TclError:
+                print('Program started remotely by another program...')
+                print('No icons will be used')
         L4 = Label(newIso, text = 'Enter the information\n for the desired isotope', font = font3)
         L4.place(relx=0.5, rely=0.15, anchor = CENTER)
         L5 = Label(newIso, text = 'Atomic Number, Z:', font = font2)
@@ -619,7 +649,11 @@ class CSA:
         autoanalysis.wm_title("results for Auto-Analysis")
         autoanalysis.configure(bg='white')
         if platform.system() == 'Windows':
-            autoanalysis.iconbitmap("icons/CSA.ico")
+            try:
+                autoanalysis.iconbitmap("icons/CSA.ico")
+            except TclError:
+                print('Program started remotely by another program...')
+                print('No icons will be used')
         v = Scrollbar(autoanalysis, orient = 'vertical')
         t = Text(autoanalysis, font = font4, width = 100, height = 100, wrap = NONE, yscrollcommand = v.set)
         
@@ -747,7 +781,11 @@ class CSA:
         options.wm_title("Calibration Options")
         options.configure(bg='white')
         if platform.system() == 'Windows':
-            options.iconbitmap("icons/calibration.ico")
+            try:
+                options.iconbitmap("icons/calibration.ico")
+            except TclError:
+                print('Program started remotely by another program...')
+                print('No icons will be used')
         Label(options, text = 'Select elements that you think\n could be present', bg='white', font = font2).place(relx=0.5, rely=0.1, anchor = CENTER)
         
         carbon = IntVar(value=int(self.calibration_elements[0]))
@@ -800,7 +838,11 @@ class CSA:
         status.wm_title("Calibration")
         status.configure(bg='white')
         if platform.system() == 'Windows':
-            status.iconbitmap("icons/calibration.ico")
+            try:
+                status.iconbitmap("icons/calibration.ico")
+            except TclError:
+                print('Program started remotely by another program...')
+                print('No icons will be used')
         L0 = Label(status, text = 'Calibrating...', bg='white', font = font2)
         L0.place(relx=0.5, rely=0.3, anchor = CENTER)
         progress = ttk.Progressbar(status, orient = HORIZONTAL, length = 300)
@@ -979,6 +1021,7 @@ class CSA:
 
     #This is the GUI for the software
     def makeGui(self, root=None):
+        global first
         if root == None:
             self.root = Tk()
         else:
@@ -991,7 +1034,11 @@ class CSA:
         self.root.configure(bg='white')
         self.root.protocol("WM_DELETE_WINDOW", self.quitProgram)
         if platform.system() == 'Windows':
-            self.root.iconbitmap("icons/CSA.ico")
+            try:
+                self.root.iconbitmap("icons/CSA.ico")
+            except TclError:
+                print('Program started remotely by another program...')
+                print('No icons will be used')
 
         #Creates intro message
         introMessage ='Import a data file to begin'
@@ -1049,6 +1096,11 @@ class CSA:
         self.root.bind("<Control-z>", lambda eff: self.undo())
         self.root.bind("<Control-a>", lambda eff: self.eraseAll())
 
+        #Allows another program to open spectrum analyzer and provide an input file to be read
+        if len(sys.argv) > 1 and first:
+            print('Program started remotely by another program')
+            self.getData(sys.argv[1])
+            first = False
 
         self.root.mainloop()
 
