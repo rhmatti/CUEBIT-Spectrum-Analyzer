@@ -1,4 +1,4 @@
-V=3200
+V=3200.0
 R=0.35
 energy=4500
 carbon=1
@@ -7,4 +7,4 @@ oxygen=1
 neon=0
 argon=1
 krypton=0
-work_dir=C:/Users/Rick/OneDrive/Documents/Graduate School/Research/EBIT Spectra/MagneticScans/
+work_dir=C:/Users/Rick/OneDrive/Documents/Graduate School/Research/EBIT Spectra/

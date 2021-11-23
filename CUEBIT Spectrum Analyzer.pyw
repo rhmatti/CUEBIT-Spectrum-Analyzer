@@ -402,7 +402,7 @@ class CSA:
             pass
 
         try:
-            title = self.filename.split('/')
+            title = os.path.basename(self.filename)
             x_min = np.amin(self.B)
             x_max = np.amax(self.B)
             # creating the Matplotlib figure
@@ -419,7 +419,7 @@ class CSA:
             plt.xlim([x_min,x_max])
             plt.xlabel('Magnetic Field (mT)',fontsize=textSize)
             plt.ylabel('Current (pA)',fontsize=textSize)
-            plt.title(title[len(title)-1])
+            plt.title(title)
 
             # creating the Tkinter canvas containing the Matplotlib figure
             self.canvas = FigureCanvasTkAgg(fig, master = self.root)
