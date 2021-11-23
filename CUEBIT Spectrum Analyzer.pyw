@@ -445,7 +445,7 @@ class CSA:
         self.graphType = 1
 
         try:
-            title = self.filename.split('/')
+            title = os.path.basename(self.filename)
             self.canvas.get_tk_widget().destroy()
             self.toolbar.destroy()
             plt.close('all')
@@ -464,7 +464,7 @@ class CSA:
             plt.xlim([x_min,x_max])
             plt.xlabel('A/q',fontsize=textSize)
             plt.ylabel('Current (pA)',fontsize=textSize)
-            plt.title(title[len(title)-1])
+            plt.title(title)
 
             # creating the Tkinter canvas containing the Matplotlib figure
             self.canvas = FigureCanvasTkAgg(fig, master = self.root)
@@ -489,7 +489,7 @@ class CSA:
         self.graphType = str(Z)+','+str(A)+','+x_label
 
         try:
-            title = self.filename.split('/')
+            title = os.path.basename(self.filename)
             self.canvas.get_tk_widget().destroy()
             self.toolbar.destroy()
             plt.close('all')
@@ -504,7 +504,7 @@ class CSA:
             plt.plot(A/mpq, self.I, color = (0.368417,0.506779,0.709798), linestyle = '-', linewidth = 2)
             plt.xlabel(x_label + " Charge State",fontsize=textSize)
             plt.ylabel('Current (pA)',fontsize=textSize)
-            plt.title(title[len(title)-1])
+            plt.title(title)
             plt.xlim([0.5,Z+0.5])
             y_min, y_max = plt.gca().get_ylim()
             if len(self.labels) > 0:
