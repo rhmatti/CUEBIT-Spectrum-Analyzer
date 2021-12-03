@@ -1,10 +1,10 @@
 #CUEBIT Spectrum Analyzer
 #Author: Richard Mattish
-#Last Updated: 11/17/2021
+#Last Updated: 12/03/2021
 
 #Function:  This program provides a graphical user interface for importing
 #           and analyzing EBIT data files to identify isotopes present in the
-#           spectrum and the exporting of results
+#           spectrum as well as the exporting of results
 
 
 #Imports necessary packages
@@ -144,8 +144,8 @@ class CSA:
     #Opens About Window with description of software
     def About(self):
         name = "CUEBIT Spectrum Analyzer"
-        version = 'Version: 2.1.1'
-        date = 'Date: 11/23/2021'
+        version = 'Version: 2.1.2'
+        date = 'Date: 12/03/2021'
         support = 'Support: '
         url = 'https://github.com/rhmatti/CUEBIT-Spectrum-Analyzer'
         copyrightMessage ='Copyright © 2021 Richard Mattish All Rights Reserved.'
@@ -372,16 +372,18 @@ class CSA:
         if filename != None:
             self.filename = filename
         inputFile = open(self.filename, "r")
-            
-        inputFile = inputFile.readlines()
         start_line = 0
         header = False
+
         i = 0
-        while i < len(inputFile) and not header:
-            if inputFile[i] == 'Timestamp (s)\tMagnetic Field (T)\tFC2 Current (A)\n':
-                start_line = i + 1
-                header = True
-            i = i + 1
+        for line in inputFile:
+            if not header:
+                i = i + 1
+                if line == 'Timestamp (s)\tMagnetic Field (T)\tFC2 Current (A)\n':
+                    header = True
+                    start_line = i
+                    break
+
         data = np.genfromtxt(self.filename, delimiter='\t', skip_header=start_line)
         if header == True:
             self.B = data[:,1]*10**3
