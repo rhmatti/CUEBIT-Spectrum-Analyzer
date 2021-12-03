@@ -31,6 +31,7 @@ import pandas as pd
 
 #Defines location of the Desktop as well as font and text size for use in the software
 desktop = os.path.expanduser("~\Desktop")
+desktop = desktop.replace(os.sep, '/')
 font1 = ('Helvetica', 16)
 font2 = ('Helvetica', 14)
 font3 = ('Helvetica', 18)
@@ -144,7 +145,7 @@ class CSA:
     #Opens About Window with description of software
     def About(self):
         name = "CUEBIT Spectrum Analyzer"
-        version = 'Version: 2.1.2'
+        version = 'Version: 2.1.3'
         date = 'Date: 12/03/2021'
         support = 'Support: '
         url = 'https://github.com/rhmatti/CUEBIT-Spectrum-Analyzer'
@@ -330,14 +331,14 @@ class CSA:
         self.getData()
 
     #Lets user save a copy of the matplotlib graph displayed in the software
-    def saveGraph(self):
+    def saveGraph():
         try:
             saveFile = str(filedialog.asksaveasfile(initialdir = desktop,title = "Save file",filetypes = (("Portable Network Graphic","*.png"),("JPEG","*.jpeg")), defaultextension = (("Portable Network Graphic","*.png"),("JPEG","*.jpeg"))))
             print(saveFile)
             saveFile = saveFile.split("'")
             saveFile = saveFile[1]
             print(str(saveFile))
-            self.plt.savefig(saveFile, bbox_inches='tight')
+            plt.savefig(saveFile, bbox_inches='tight')
         except:
             pass
 
@@ -422,6 +423,10 @@ class CSA:
             plt.xlabel('Magnetic Field (mT)',fontsize=textSize)
             plt.ylabel('Current (pA)',fontsize=textSize)
             plt.title(title)
+
+            #Setting the default save directory for matplotlib toolbar
+            plt.rcParams["savefig.directory"] = desktop
+            print(f'Desktop{desktop}')
 
             # creating the Tkinter canvas containing the Matplotlib figure
             self.canvas = FigureCanvasTkAgg(fig, master = self.root)
@@ -1052,7 +1057,7 @@ class CSA:
         filemenu = Menu(menu, tearoff=0)
         menu.add_cascade(label="File", menu=filemenu)
         filemenu.add_command(label="Import", command=lambda: self.askopenfile(), accelerator="Ctrl+I")
-        filemenu.add_command(label="Save", command=lambda: self.saveGraph(), accelerator="Ctrl+S")
+        filemenu.add_command(label="Save", command=lambda: CSA.saveGraph(), accelerator="Ctrl+S")
         filemenu.add_command(label='Settings', command=lambda: self.Settings())
         filemenu.add_command(label='Calibrate', command=lambda: self.calibration())
         filemenu.add_separator()
@@ -1092,7 +1097,7 @@ class CSA:
 
         #Binds keyboard shortcuts to functions
         self.root.bind_all("<Control-i>", lambda eff: self.askopenfile())
-        self.root.bind("<Control-s>", lambda eff: self.saveGraph())
+        #self.root.bind("<Control-s>", lambda eff: CSA.saveGraph())
         self.root.bind_all("<Control-r>", lambda eff: self.autoAnalyze())
         self.root.bind_all("<Control-p>", lambda eff: self.PTable())
         self.root.bind("<Control-z>", lambda eff: self.undo())
