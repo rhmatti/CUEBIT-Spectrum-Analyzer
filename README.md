@@ -80,6 +80,6 @@ User Instructions
 	* If you want to evaluate an isotope other than the most abundant isotope of the given elements, or of an element not listed in the Analysis menu, select the "Other" option
 	* Enter the atomic number Z and atomic mass (in amu) for the desired isotope, then select "Run Comparison"
 
-6. To save the graph on screen, select "Save" from the drop-down File menu (File>Save) or use the shortcut `<Ctrl+S>`
+6. To save the graph on screen, click the Save icon in the toolbar at the bottom left of the screen, select "Save" from the drop-down File menu (File>Save), or use the shortcut `<Ctrl+S>`
 
 
