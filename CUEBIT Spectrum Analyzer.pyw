@@ -834,6 +834,7 @@ class CSA:
     #Enables multi-threading so that the calibrateV process does not freeze main GUI
     def multiThreading(self):
         t1=threading.Thread(target=self.calibrateV)
+        t1.setDaemon(True)      #This is so the thread will terminate when the main program is terminated
         t1.start()
 
     #Aims to select a value for V that maximizes the number of peaks that align with the elements selected by the user
@@ -890,7 +891,7 @@ class CSA:
             for fudge in fudgeArray:
                 mpqArray = self.a*np.square(self.R*self.B/1000)/(2*fudge)
                 q = mass/mpqArray
-                peak_index = find_peaks(self.I, height=0)
+                peak_index = find_peaks(self.I, height=1)
                 peak_q = q[peak_index[0]]
                 if fudgeArray[0]==1:
                     interval = (fudgeArray[len(fudgeArray)-1]-(fudgeArray[0]-1))/5
