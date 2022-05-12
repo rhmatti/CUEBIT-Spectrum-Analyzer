@@ -917,7 +917,12 @@ class CSA:
         arg_matches = np.where(matches[:,1]==np.amax(matches[:,1]))[0]
         index = int(len(arg_matches)/2-1)
         middle_match = arg_matches[index]
-        self.V = matches[middle_match,0]
+        middle_match_V = matches[middle_match,0]
+
+        mode_match_V = int(mode(np.round(matches[arg_matches,0]/10)*10)[0])
+        print(f'mode={mode_match_V}')
+        print(f'middle={middle_match_V}')
+        self.V = mode_match_V
 
 
         L0.destroy()

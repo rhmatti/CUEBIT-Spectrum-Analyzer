@@ -1,4 +1,4 @@
-V=3311
+V=3280.0
 R=0.35
 energy=4500
 carbon=1
@@ -7,4 +7,4 @@ oxygen=1
 neon=1
 argon=0
 krypton=0
-work_dir=C:/Users/rickm/OneDrive/Documents/Graduate School/Research/EBIT Spectra/
+work_dir=C:/Users/Rick/OneDrive/Documents/Graduate School/Research/EBIT Spectra/
