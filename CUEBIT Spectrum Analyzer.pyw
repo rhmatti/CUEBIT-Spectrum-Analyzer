@@ -1152,6 +1152,7 @@ class CSA:
         introMessageVar = Message(self.root, text = introMessage, font = font2, width = 600)
         introMessageVar.config(bg='white', fg='grey')
         introMessageVar.place(relx = 0.5, rely = 0.5, anchor = CENTER)
+        introMessageVar.bind('<Button-1>', lambda  eff: self.askopenfile())
 
         #Creates File menu
         filemenu = Menu(menu, tearoff=0)
@@ -1171,6 +1172,7 @@ class CSA:
         analysismenu.add_command(label='I vs B', command= lambda: self.plotData())
         analysismenu.add_command(label='A/q', command= lambda: self.massToCharge())
         analysismenu.add_separator()
+        analysismenu.add_command(label='Be', command= lambda: self.elementComparison(4, 9, "Beryllium-9"))
         analysismenu.add_command(label='C', command= lambda: self.elementComparison(6, 12, "Carbon-12"))
         analysismenu.add_command(label='N', command= lambda: self.elementComparison(7, 14, "Nitrogen-14"))
         analysismenu.add_command(label='O', command= lambda: self.elementComparison(8, 16, "Oxygen-16"))
