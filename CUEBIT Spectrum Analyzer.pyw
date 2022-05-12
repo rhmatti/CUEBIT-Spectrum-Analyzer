@@ -64,6 +64,12 @@ def orderMatrix(matrix, column):
             i = i + 1
     return orderedMatrix
 
+#Enables multi-threading so that function will not freeze main GUI
+def multiThreading(function):
+    t1=threading.Thread(target=function)
+    t1.setDaemon(True)      #This is so the thread will terminate when the main program is terminated
+    t1.start()
+
 def startProgram(root=None):
     instance = CSA()
     instance.makeGui(root)
@@ -71,8 +77,7 @@ def startProgram(root=None):
 class CSA:
     def __init__(self):
         #Loads elemental information from periodic table
-        t1=threading.Thread(target=self.load_Ptable)
-        t1.start()
+        multiThreading(self.load_Ptable)
 
         #Defines global variables
         self.canvas = None
@@ -826,17 +831,106 @@ class CSA:
         Label(options, text = 'eV/q', bg='white', font=font2).place(relx=0.7, rely=0.6, anchor=W)
 
         b1 = Button(options, text = 'Run Calibration', relief = 'raised', background='lightblue', activebackground='blue', font = font1, width = 15, height = 2,\
-                    command = lambda: [self.updateSettings(self.V, self.R, int(float(E1.get())), [carbon.get(), nitrogen.get(), oxygen.get(), neon.get(), argon.get(), krypton.get()]), self.multiThreading(), options.destroy()])
+                    command = lambda: [self.updateSettings(self.V, self.R, int(float(E1.get())), [carbon.get(), nitrogen.get(), oxygen.get(), neon.get(), argon.get(), krypton.get()]), multiThreading(self.newCalibrateV), options.destroy()])
         b1.place(relx=0.5, rely=0.8, anchor = CENTER)
 
-    
+    #Aims to select a value for V that maximizes the number of peaks that align with the elements selected by the user
+    def newCalibrateV(self):
+        self.calibrate = True
 
-    #Enables multi-threading so that the calibrateV process does not freeze main GUI
-    def multiThreading(self):
-        t1=threading.Thread(target=self.calibrateV)
-        t1.setDaemon(True)      #This is so the thread will terminate when the main program is terminated
-        t1.start()
+        status = Toplevel(self.root)
+        status.geometry('350x150')
+        status.wm_title("Calibration")
+        status.configure(bg='white')
+        if platform.system() == 'Windows':
+            try:
+                status.iconbitmap("icons/calibration.ico")
+            except TclError:
+                print('Program started remotely by another program...')
+                print('No icons will be used')
+        L0 = Label(status, text = 'Calibrating...', bg='white', font = font2)
+        L0.place(relx=0.5, rely=0.3, anchor = CENTER)
+        progress = ttk.Progressbar(status, orient = HORIZONTAL, length = 300)
+        progress.place(relx=0.5, rely=0.5, anchor=CENTER)
+        progress.config(mode = 'determinate', maximum=100, value = 0)
 
+        t1 = time.time()
+        atoms = []
+        possible_elements = ['C', 'N', 'O', 'Ne', 'Ar', 'Kr']
+        for i in range(0, len(self.calibration_elements)):
+            if self.calibration_elements[i] == 1:
+                atoms.append(possible_elements[i])
+        fudgeArray = np.arange(max(self.energy-4000,1), self.energy+1001, dtype=int)
+        peak_index = find_peaks(self.I, height=0.5, width=3)
+        peak_B = self.B[peak_index[0]]
+        print(peak_B)
+        print(len(peak_B))
+
+        mpqArray = []
+        for atom in atoms:
+            matches = self.isotopes.loc[self.isotopes['symbol']==atom]
+            print(matches)
+
+            massVector = []
+            abundVector = []
+            for i in range(0, len(matches)):
+                mass = matches['mass'].iloc[i]
+                abund = matches['abundance'].iloc[i]
+                massVector.append(mass)
+                abundVector.append(abund)
+            
+            massArray = np.array(massVector)
+            abundArray = np.array(abundVector)
+            mass = massArray[np.argmax(abundArray)]
+            charge = matches['atomic_number'].iloc[0]
+            print(f'mass={mass}')
+            print(f'charge={charge}')
+            while charge > 0:
+                mpqArray.append(mass/charge)
+                charge = charge - 1
+        mpqArray = np.array(mpqArray)
+        matches = []
+
+        if fudgeArray[0]==1:
+            interval = (fudgeArray[len(fudgeArray)-1]-(fudgeArray[0]-1))/20
+        else:
+            interval = (fudgeArray[len(fudgeArray)-1]-(fudgeArray[0]))/20
+        start = fudgeArray[0]
+        n = 0
+        for fudge in fudgeArray:
+            #Steps up progress bar by 4%
+            if fudge == start+n*interval:
+                progress.step(5)
+                n = n + 1
+
+            B_peak_array = (1000/self.R)*np.sqrt((2*fudge*mpqArray)/self.a)
+            num_matches = 0
+            for B in B_peak_array:
+                for peak in peak_B:
+                    if abs(B-peak) < 0.2:
+                        num_matches = num_matches + 1
+            if num_matches > 0:
+                matches.append([fudge, num_matches])
+        progress.step(5)
+        
+        matches = np.array(matches)
+        arg_matches = np.where(matches[:,1]==np.amax(matches[:,1]))[0]
+        index = int(len(arg_matches)/2-1)
+        middle_match = arg_matches[index]
+        self.V = matches[middle_match,0]
+
+
+        L0.destroy()
+        progress.destroy()
+        L1 = Label(status, text = 'Calibration Complete', bg='white', font = font2)
+        L1.place(relx=0.5, rely=0.3, anchor = CENTER)
+        L2 = Label(status, text = 'Setting V='+ str(self.V), bg = 'white', font = font4)
+        L2.place(relx=0.5, rely=0.5, anchor = CENTER)
+        L3 = Label(status, text = 'New Calibration Routine', bg = 'white', fg = 'green', font = font4)
+        L3.place(relx=0.5, rely=0.8, anchor = CENTER)
+
+        self.updateSettings(self.V, self.R, self.energy, self.calibration_elements)
+                        
     #Aims to select a value for V that maximizes the number of peaks that align with the elements selected by the user
     def calibrateV(self):
         self.calibrate = True
@@ -891,7 +985,7 @@ class CSA:
             for fudge in fudgeArray:
                 mpqArray = self.a*np.square(self.R*self.B/1000)/(2*fudge)
                 q = mass/mpqArray
-                peak_index = find_peaks(self.I, height=1)
+                peak_index = find_peaks(self.I, height=0.5, width=3)
                 peak_q = q[peak_index[0]]
                 if fudgeArray[0]==1:
                     interval = (fudgeArray[len(fudgeArray)-1]-(fudgeArray[0]-1))/5
@@ -1025,7 +1119,7 @@ class CSA:
             self.V = roundedModeV
             print('V='+str(self.V))
             print('Low Confidence')
-            self.updateSettings(self.V, self.R, self.energy, self.calibration_elements)
+            self.updateSettings(self.V, self.R, self.energy, self.calibration_elements)        
 
     #This is the GUI for the software
     def makeGui(self, root=None):
