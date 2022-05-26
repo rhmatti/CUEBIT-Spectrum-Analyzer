@@ -914,13 +914,13 @@ class CSA:
         fudgeArray = np.arange(max(self.energy-2000,1), self.energy+1, dtype=int)
         peak_index = find_peaks(self.I, height=0.5, width=3)
         peak_B = self.B[peak_index[0]]
-        print(peak_B)
-        print(len(peak_B))
+        #print(peak_B)
+        #print(len(peak_B))
 
         mpqArray = []
         for atom in atoms:
             matches = self.isotopes.loc[self.isotopes['symbol']==atom]
-            print(matches)
+            #print(matches)
 
             massVector = []
             abundVector = []
@@ -934,8 +934,8 @@ class CSA:
             abundArray = np.array(abundVector)
             mass = massArray[np.argmax(abundArray)]
             charge = matches['atomic_number'].iloc[0]
-            print(f'mass={mass}')
-            print(f'charge={charge}')
+            #print(f'mass={mass}')
+            #print(f'charge={charge}')
             while charge > 0:
                 mpqArray.append(mass/charge)
                 charge = charge - 1
@@ -966,15 +966,16 @@ class CSA:
         
         matches = np.array(matches)
         arg_matches = np.where(matches[:,1]==np.amax(matches[:,1]))[0]
-        index = int(len(arg_matches)/2-1)
-        middle_match = arg_matches[index]
-        middle_match_V = matches[middle_match,0]
+        #index = int(len(arg_matches)/2-1)
+        #middle_match = arg_matches[index]
+        #middle_match_V = matches[middle_match,0]
 
         mode_match_V = int(mode(np.round(matches[arg_matches,0]/10)*10)[0])
-        print(f'mode={mode_match_V}')
-        print(f'middle={middle_match_V}')
+        #print(f'mode={mode_match_V}')
+        #print(f'middle={middle_match_V}')
         self.V = mode_match_V
-
+        t2 = time.time()-t1
+        print(t2)
 
         L0.destroy()
         progress.destroy()
