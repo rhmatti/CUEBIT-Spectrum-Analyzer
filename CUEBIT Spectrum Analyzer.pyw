@@ -86,6 +86,7 @@ class CSA:
         self.toolbar = None
         self.filename = None
         self.work_dir = None
+        self.header = None
         self.B = []
         self.I = []
 
@@ -333,6 +334,7 @@ class CSA:
 
         self.updateSettings(self.V, self.R, self.energy, self.calibration_elements)
         self.eraseAll()
+        self.header = self.parse_header()
         self.getData()
 
     #Lets user save a copy of the matplotlib graph displayed in the software
@@ -374,6 +376,52 @@ class CSA:
         self.root.quit()
         self.root.destroy()
 
+
+    """
+    Gun Parameters: 
+    V_anode: 10994.2 V, V_Cathode: 598.936 V, I_emission: 71.786 mA
+
+    Drift Tubes:
+    U_0: 4524.69 V, U_A: 514.731 V, U_B: 445.12 V
+
+    Extraction:
+    EXT: 2080.35 V, EL1: 1305.2 V, EL2: 2523.73 V
+
+    Deflectors: 
+    X1: 0.1815,-0.176 V; Y1: -23.815,23.782 V
+    X2: -0.1595,0.154 V; Y2: -0.066,0.066 V
+
+    Source Pressure:
+    4.12097e-09 mbar
+
+    Ar leaked in
+
+    """
+
+    def parse_header(self, filename = None):
+        if filename != None:
+            self.filename = filename
+        inputFile = open(self.filename, "r")
+        values = {}
+        next_is_pressure = False
+        for line in inputFile:
+            if line == 'Timestamp (s)\tMagnetic Field (T)\tFC2 Current (A)\n':
+                break
+            if line.startswith("V_anode") or line.startswith("U_0") or line.startswith("EXT"):
+                args = line.strip().split(', ')
+                for i in range(len(args)):
+                    arg_v = args[i].split(' ')
+                    name = arg_v[0].replace(':', '')
+                    values[name] = float(arg_v[1])
+            if next_is_pressure:
+                next_is_pressure = False
+                args = line.split(' ')
+                values['PSRC'] = float(args[0])
+            if line.startswith('Source Pressure:'):
+                next_is_pressure=True
+        inputFile.close()
+        return values
+
     def getData(self, filename = None):
         if filename != None:
             self.filename = filename
@@ -389,6 +437,8 @@ class CSA:
                     header = True
                     start_line = i
                     break
+
+        inputFile.close()
 
         data = np.genfromtxt(self.filename, delimiter='\t', skip_header=start_line)
         if header == True:
@@ -787,6 +837,8 @@ class CSA:
 
     #Opens a window that allows the user to make various selections and start a calibration
     def calibration(self):
+        if self.header != {}:
+            self.energy = self.header["U_0"]-self.header["U_A"]
         print(self.calibration_elements)
         options = Toplevel(self.root)
         options.geometry('350x350')
@@ -827,7 +879,7 @@ class CSA:
         Label(options, text = 'Beam Energy:', bg='white', font = font2).place(relx=0.5, rely=0.6, anchor=E)
         E1 = Entry(options, bg='lightcyan', font = font2, width = 6)
         E1.place(relx=0.5, rely=0.6, anchor=W)
-        E1.insert(0,str(self.energy))
+        E1.insert(0,int(self.energy))
         Label(options, text = 'eV/q', bg='white', font=font2).place(relx=0.7, rely=0.6, anchor=W)
 
         b1 = Button(options, text = 'Run Calibration', relief = 'raised', background='lightblue', activebackground='blue', font = font1, width = 15, height = 2,\
@@ -837,7 +889,6 @@ class CSA:
     #Aims to select a value for V that maximizes the number of peaks that align with the elements selected by the user
     def newCalibrateV(self):
         self.calibrate = True
-
         status = Toplevel(self.root)
         status.geometry('350x150')
         status.wm_title("Calibration")
@@ -860,7 +911,7 @@ class CSA:
         for i in range(0, len(self.calibration_elements)):
             if self.calibration_elements[i] == 1:
                 atoms.append(possible_elements[i])
-        fudgeArray = np.arange(max(self.energy-4000,1), self.energy+1001, dtype=int)
+        fudgeArray = np.arange(max(self.energy-2000,1), self.energy+1, dtype=int)
         peak_index = find_peaks(self.I, height=0.5, width=3)
         peak_B = self.B[peak_index[0]]
         print(peak_B)
@@ -892,9 +943,9 @@ class CSA:
         matches = []
 
         if fudgeArray[0]==1:
-            interval = (fudgeArray[len(fudgeArray)-1]-(fudgeArray[0]-1))/20
+            interval = int((fudgeArray[len(fudgeArray)-1]-(fudgeArray[0]-1))/20)
         else:
-            interval = (fudgeArray[len(fudgeArray)-1]-(fudgeArray[0]))/20
+            interval = int((fudgeArray[len(fudgeArray)-1]-(fudgeArray[0]))/20)
         start = fudgeArray[0]
         n = 0
         for fudge in fudgeArray:
