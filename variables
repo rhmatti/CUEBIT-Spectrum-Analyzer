@@ -1,10 +1,10 @@
-V=3280
+V=3300.0
 R=0.35
-energy=3996
+energy=4025
 carbon=1
 nitrogen=1
 oxygen=1
-neon=1
-argon=0
+neon=0
+argon=1
 krypton=0
-work_dir=C:/Users/Rick/OneDrive/Documents/Graduate School/Research/EBIT Spectra/
+work_dir=C:/Users/Rick/OneDrive/Documents/Graduate School/Research/EBIT Spectra/2022-06-16 Data/

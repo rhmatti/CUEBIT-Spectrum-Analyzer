@@ -463,6 +463,8 @@ class CSA:
             title = os.path.basename(self.filename)
             x_min = np.amin(self.B)
             x_max = np.amax(self.B)
+            y_min = np.amin(self.I)
+            y_max = np.amax(self.I)
             # creating the Matplotlib figure
             fig, ax = plt.subplots(figsize = (16,9))
             ax.tick_params(which='both', direction='in')
@@ -470,11 +472,12 @@ class CSA:
             if len(self.labels) > 0:
                     for label in self.labels:
                         label_x_pos = np.sqrt(label[0]*2*self.V/self.a)*1000/self.R
-                        plt.text(label_x_pos, label[1]+0.2, label[2], fontsize = 10, ha='center')
+                        plt.text(label_x_pos, label[1]+.03*y_max, label[2], fontsize = 10, ha='center')
             for label in (ax.get_xticklabels() + ax.get_yticklabels()):
                 label.set_fontsize(textSize)
             plt.plot(self.B, self.I, color = (0.368417,0.506779,0.709798), linestyle = '-', linewidth = 2)
             plt.xlim([x_min,x_max])
+            plt.ylim([y_min,1.1*y_max])
             plt.xlabel('Magnetic Field (mT)',fontsize=textSize)
             plt.ylabel('Current (pA)',fontsize=textSize)
             plt.title(title)
@@ -514,16 +517,19 @@ class CSA:
             mpq = self.a*np.square(self.R*self.B/1000)/(2*self.V)
             x_min = np.amin(mpq)
             x_max = np.amax(mpq)
+            y_min = np.amin(self.I)
+            y_max = np.amax(self.I)
             fig, ax = plt.subplots(figsize = (16,9))
             ax.tick_params(which='both', direction='in')
             plt.rcParams.update({'font.size': textSize})
             if len(self.labels) > 0:
                     for label in self.labels:
-                        plt.text(label[0], label[1]+0.2, label[2], fontsize = 10, ha='center')
+                        plt.text(label[0], label[1]+.03*y_max, label[2], fontsize = 10, ha='center')
             for label in (ax.get_xticklabels() + ax.get_yticklabels()):
                 label.set_fontsize(textSize)
             plt.plot(mpq, self.I, color = (0.368417,0.506779,0.709798), linestyle = '-', linewidth = 2)
             plt.xlim([x_min,x_max])
+            plt.ylim([y_min,1.1*y_max])
             plt.xlabel('A/q',fontsize=textSize)
             plt.ylabel('Current (pA)',fontsize=textSize)
             plt.title(title)
@@ -555,6 +561,8 @@ class CSA:
             self.canvas.get_tk_widget().destroy()
             self.toolbar.destroy()
             plt.close('all')
+            y_min = np.amin(self.I)
+            y_max = np.amax(self.I)
             mpq = self.a*np.square(self.R*self.B/1000)/(2*self.V)
             fig, self.ax = plt.subplots(figsize = (16,9))
             self.ax.tick_params(which='both', direction='in')
@@ -568,10 +576,11 @@ class CSA:
             plt.ylabel('Current (pA)',fontsize=textSize)
             plt.title(title)
             plt.xlim([0.5,Z+0.5])
+            plt.ylim([y_min,1.1*y_max])
             y_min, y_max = plt.gca().get_ylim()
             if len(self.labels) > 0:
                     for label in self.labels:
-                        plt.text(A/label[0], label[1]+0.02*y_max, label[2], fontsize = 10, ha='center')
+                        plt.text(A/label[0], label[1]+0.03*y_max, label[2], fontsize = 10, ha='center')
             # creating the Tkinter canvas containing the Matplotlib figure
             self.canvas = FigureCanvasTkAgg(fig, master = self.root)
             self.canvas.draw()
@@ -607,12 +616,28 @@ class CSA:
             y_min, y_max = plt.gca().get_ylim()
             matches = self.isotopes.loc[self.isotopes['atomic_number']==Z]
             element = matches['symbol'].iloc[0]
+
+            massVector = []
+            abundVector = []
+            for i in range(0, len(matches)):
+                mass = matches['mass'].iloc[i]
+                abund = matches['abundance'].iloc[i]
+                massVector.append(mass)
+                abundVector.append(abund)
+            massArray = np.array(massVector)
+            abundArray = np.array(abundVector)
+            commonMass = massArray[np.argmax(abundArray)]
+
             q = int(round(event.xdata,0))
             peak_index = find_peaks(self.I, height=0)[0]
             deltas = abs(self.B[peak_index]-(1000/self.R)*np.sqrt(A/q*2*self.V/self.a))
             min_delta_index = np.argmin(deltas)
             peak_I = self.I[peak_index[min_delta_index]]
-            label = [A/int(round(event.xdata,0)), peak_I, element+'$^{'+str(q)+'+}$']
+            if abs(A-commonMass) < 0.5:
+                label = [A/int(round(event.xdata,0)), peak_I, element+'$^{'+str(q)+'+}$']
+            else:
+                label = [A/int(round(event.xdata,0)), peak_I, '$^{'+str(int(A))+'}$'+element+'$^{'+str(q)+'+}$']
+
             if len(self.labels) > 0:
                 self.count = 0
                 for entry in self.labels:
@@ -965,6 +990,7 @@ class CSA:
         progress.step(5)
         
         matches = np.array(matches)
+        print(f'matches={matches}')
         arg_matches = np.where(matches[:,1]==np.amax(matches[:,1]))[0]
         #index = int(len(arg_matches)/2-1)
         #middle_match = arg_matches[index]
