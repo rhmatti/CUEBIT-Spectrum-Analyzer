@@ -405,7 +405,7 @@ class CSA:
         values = {}
         next_is_pressure = False
         for line in inputFile:
-            if line == 'Timestamp (s)\tMagnetic Field (T)\tFC2 Current (A)\n':
+            if 'Timestamp (s)\tMagnetic Field (T)\tFC2 Current (A)' in line:
                 break
             if line.startswith("V_anode") or line.startswith("U_0") or line.startswith("EXT"):
                 args = line.strip().split(', ')
@@ -433,7 +433,7 @@ class CSA:
         for line in inputFile:
             if not header:
                 i = i + 1
-                if line == 'Timestamp (s)\tMagnetic Field (T)\tFC2 Current (A)\n':
+                if 'Timestamp (s)\tMagnetic Field (T)\tFC2 Current (A)' in line:
                     header = True
                     start_line = i
                     break
