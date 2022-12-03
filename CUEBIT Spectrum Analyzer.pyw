@@ -89,6 +89,7 @@ class CSA:
         self.toolbar = None
         self.filename = None
         self.work_dir = None
+        self.header = None
         self.B = []
         self.I = []
 
@@ -336,6 +337,7 @@ class CSA:
 
         self.updateSettings(self.V, self.R, self.energy, self.calibration_elements)
         self.eraseAll()
+        self.header = self.parse_header()
         self.getData()
 
     #Lets user save a copy of the matplotlib graph displayed in the software
@@ -377,6 +379,52 @@ class CSA:
         self.root.quit()
         self.root.destroy()
 
+
+    """
+    Gun Parameters: 
+    V_anode: 10994.2 V, V_Cathode: 598.936 V, I_emission: 71.786 mA
+
+    Drift Tubes:
+    U_0: 4524.69 V, U_A: 514.731 V, U_B: 445.12 V
+
+    Extraction:
+    EXT: 2080.35 V, EL1: 1305.2 V, EL2: 2523.73 V
+
+    Deflectors: 
+    X1: 0.1815,-0.176 V; Y1: -23.815,23.782 V
+    X2: -0.1595,0.154 V; Y2: -0.066,0.066 V
+
+    Source Pressure:
+    4.12097e-09 mbar
+
+    Ar leaked in
+
+    """
+
+    def parse_header(self, filename = None):
+        if filename != None:
+            self.filename = filename
+        inputFile = open(self.filename, "r")
+        values = {}
+        next_is_pressure = False
+        for line in inputFile:
+            if 'Timestamp (s)\tMagnetic Field (T)\tFC2 Current (A)' in line:
+                break
+            if line.startswith("V_anode") or line.startswith("U_0") or line.startswith("EXT"):
+                args = line.strip().split(', ')
+                for i in range(len(args)):
+                    arg_v = args[i].split(' ')
+                    name = arg_v[0].replace(':', '')
+                    values[name] = float(arg_v[1])
+            if next_is_pressure:
+                next_is_pressure = False
+                args = line.split(' ')
+                values['PSRC'] = float(args[0])
+            if line.startswith('Source Pressure:'):
+                next_is_pressure=True
+        inputFile.close()
+        return values
+
     def getData(self, filename = None):
         if filename != None:
             self.filename = filename
@@ -388,10 +436,12 @@ class CSA:
         for line in inputFile:
             if not header:
                 i = i + 1
-                if line == 'Timestamp (s)\tMagnetic Field (T)\tFC2 Current (A)\n':
+                if 'Timestamp (s)\tMagnetic Field (T)\tFC2 Current (A)' in line:
                     header = True
                     start_line = i
                     break
+
+        inputFile.close()
 
         data = np.genfromtxt(self.filename, delimiter='\t', skip_header=start_line)
         if header == True:
@@ -416,6 +466,8 @@ class CSA:
             title = os.path.basename(self.filename)
             x_min = np.amin(self.B)
             x_max = np.amax(self.B)
+            y_min = np.amin(self.I)
+            y_max = np.amax(self.I)
             # creating the Matplotlib figure
             fig, ax = plt.subplots(figsize = (16,9))
             ax.tick_params(which='both', direction='in')
@@ -423,11 +475,12 @@ class CSA:
             if len(self.labels) > 0:
                     for label in self.labels:
                         label_x_pos = np.sqrt(label[0]*2*self.V/self.a)*1000/self.R
-                        plt.text(label_x_pos, label[1]+0.2, label[2], fontsize = 10, ha='center')
+                        plt.text(label_x_pos, label[1]+.03*y_max, label[2], fontsize = 10, ha='center')
             for label in (ax.get_xticklabels() + ax.get_yticklabels()):
                 label.set_fontsize(textSize)
             plt.plot(self.B, self.I, color = colors[0], linestyle = '-', linewidth = 2)
             plt.xlim([x_min,x_max])
+            plt.ylim([y_min,1.1*y_max])
             plt.xlabel('Magnetic Field (mT)',fontsize=textSize)
             plt.ylabel('Current (pA)',fontsize=textSize)
             plt.title(title)
@@ -467,16 +520,19 @@ class CSA:
             mpq = self.a*np.square(self.R*self.B/1000)/(2*self.V)
             x_min = np.amin(mpq)
             x_max = np.amax(mpq)
+            y_min = np.amin(self.I)
+            y_max = np.amax(self.I)
             fig, ax = plt.subplots(figsize = (16,9))
             ax.tick_params(which='both', direction='in')
             plt.rcParams.update({'font.size': textSize})
             if len(self.labels) > 0:
                     for label in self.labels:
-                        plt.text(label[0], label[1]+0.2, label[2], fontsize = 10, ha='center')
+                        plt.text(label[0], label[1]+.03*y_max, label[2], fontsize = 10, ha='center')
             for label in (ax.get_xticklabels() + ax.get_yticklabels()):
                 label.set_fontsize(textSize)
             plt.plot(mpq, self.I, color = colors[0], linestyle = '-', linewidth = 2)
             plt.xlim([x_min,x_max])
+            plt.ylim([y_min,1.1*y_max])
             plt.xlabel('A/q',fontsize=textSize)
             plt.ylabel('Current (pA)',fontsize=textSize)
             plt.title(title)
@@ -508,6 +564,8 @@ class CSA:
             self.canvas.get_tk_widget().destroy()
             self.toolbar.destroy()
             plt.close('all')
+            y_min = np.amin(self.I)
+            y_max = np.amax(self.I)
             mpq = self.a*np.square(self.R*self.B/1000)/(2*self.V)
             fig, self.ax = plt.subplots(figsize = (16,9))
             self.ax.tick_params(which='both', direction='in')
@@ -521,10 +579,11 @@ class CSA:
             plt.ylabel('Current (pA)',fontsize=textSize)
             plt.title(title)
             plt.xlim([0.5,Z+0.5])
+            plt.ylim([y_min,1.1*y_max])
             y_min, y_max = plt.gca().get_ylim()
             if len(self.labels) > 0:
                     for label in self.labels:
-                        plt.text(A/label[0], label[1]+0.02*y_max, label[2], fontsize = 10, ha='center')
+                        plt.text(A/label[0], label[1]+0.03*y_max, label[2], fontsize = 10, ha='center')
             # creating the Tkinter canvas containing the Matplotlib figure
             self.canvas = FigureCanvasTkAgg(fig, master = self.root)
             self.canvas.draw()
@@ -560,12 +619,28 @@ class CSA:
             y_min, y_max = plt.gca().get_ylim()
             matches = self.isotopes.loc[self.isotopes['atomic_number']==Z]
             element = matches['symbol'].iloc[0]
+
+            massVector = []
+            abundVector = []
+            for i in range(0, len(matches)):
+                mass = matches['mass'].iloc[i]
+                abund = matches['abundance'].iloc[i]
+                massVector.append(mass)
+                abundVector.append(abund)
+            massArray = np.array(massVector)
+            abundArray = np.array(abundVector)
+            commonMass = massArray[np.argmax(abundArray)]
+
             q = int(round(event.xdata,0))
             peak_index = find_peaks(self.I, height=0)[0]
             deltas = abs(self.B[peak_index]-(1000/self.R)*np.sqrt(A/q*2*self.V/self.a))
             min_delta_index = np.argmin(deltas)
             peak_I = self.I[peak_index[min_delta_index]]
-            label = [A/int(round(event.xdata,0)), peak_I, element+'$^{'+str(q)+'+}$']
+            if abs(A-commonMass) < 0.5:
+                label = [A/int(round(event.xdata,0)), peak_I, element+'$^{'+str(q)+'+}$']
+            else:
+                label = [A/int(round(event.xdata,0)), peak_I, '$^{'+str(int(A))+'}$'+element+'$^{'+str(q)+'+}$']
+
             if len(self.labels) > 0:
                 self.count = 0
                 for entry in self.labels:
@@ -790,6 +865,8 @@ class CSA:
 
     #Opens a window that allows the user to make various selections and start a calibration
     def calibration(self):
+        if self.header != {}:
+            self.energy = self.header["U_0"]-self.header["U_A"]
         print(self.calibration_elements)
         options = Toplevel(self.root)
         options.geometry('350x350')
@@ -830,7 +907,7 @@ class CSA:
         Label(options, text = 'Beam Energy:', bg='white', font = font2).place(relx=0.5, rely=0.6, anchor=E)
         E1 = Entry(options, bg='lightcyan', font = font2, width = 6)
         E1.place(relx=0.5, rely=0.6, anchor=W)
-        E1.insert(0,str(self.energy))
+        E1.insert(0,int(self.energy))
         Label(options, text = 'eV/q', bg='white', font=font2).place(relx=0.7, rely=0.6, anchor=W)
 
         b1 = Button(options, text = 'Run Calibration', relief = 'raised', background='lightblue', activebackground='blue', font = font1, width = 15, height = 2,\
@@ -840,7 +917,6 @@ class CSA:
     #Aims to select a value for V that maximizes the number of peaks that align with the elements selected by the user
     def newCalibrateV(self):
         self.calibrate = True
-
         status = Toplevel(self.root)
         status.geometry('350x150')
         status.wm_title("Calibration")
@@ -863,16 +939,16 @@ class CSA:
         for i in range(0, len(self.calibration_elements)):
             if self.calibration_elements[i] == 1:
                 atoms.append(possible_elements[i])
-        fudgeArray = np.arange(max(self.energy-4000,1), self.energy+1001, dtype=int)
+        fudgeArray = np.arange(max(self.energy-2000,1), self.energy+1, dtype=int)
         peak_index = find_peaks(self.I, height=0.5, width=3)
         peak_B = self.B[peak_index[0]]
-        print(peak_B)
-        print(len(peak_B))
+        #print(peak_B)
+        #print(len(peak_B))
 
         mpqArray = []
         for atom in atoms:
             matches = self.isotopes.loc[self.isotopes['symbol']==atom]
-            print(matches)
+            #print(matches)
 
             massVector = []
             abundVector = []
@@ -886,8 +962,8 @@ class CSA:
             abundArray = np.array(abundVector)
             mass = massArray[np.argmax(abundArray)]
             charge = matches['atomic_number'].iloc[0]
-            print(f'mass={mass}')
-            print(f'charge={charge}')
+            #print(f'mass={mass}')
+            #print(f'charge={charge}')
             while charge > 0:
                 mpqArray.append(mass/charge)
                 charge = charge - 1
@@ -895,9 +971,9 @@ class CSA:
         matches = []
 
         if fudgeArray[0]==1:
-            interval = (fudgeArray[len(fudgeArray)-1]-(fudgeArray[0]-1))/20
+            interval = int((fudgeArray[len(fudgeArray)-1]-(fudgeArray[0]-1))/20)
         else:
-            interval = (fudgeArray[len(fudgeArray)-1]-(fudgeArray[0]))/20
+            interval = int((fudgeArray[len(fudgeArray)-1]-(fudgeArray[0]))/20)
         start = fudgeArray[0]
         n = 0
         for fudge in fudgeArray:
@@ -917,16 +993,18 @@ class CSA:
         progress.step(5)
         
         matches = np.array(matches)
+        print(f'matches={matches}')
         arg_matches = np.where(matches[:,1]==np.amax(matches[:,1]))[0]
-        index = int(len(arg_matches)/2-1)
-        middle_match = arg_matches[index]
-        middle_match_V = matches[middle_match,0]
+        #index = int(len(arg_matches)/2-1)
+        #middle_match = arg_matches[index]
+        #middle_match_V = matches[middle_match,0]
 
         mode_match_V = int(mode(np.round(matches[arg_matches,0]/10)*10)[0])
-        print(f'mode={mode_match_V}')
-        print(f'middle={middle_match_V}')
+        #print(f'mode={mode_match_V}')
+        #print(f'middle={middle_match_V}')
         self.V = mode_match_V
-
+        t2 = time.time()-t1
+        print(t2)
 
         L0.destroy()
         progress.destroy()
