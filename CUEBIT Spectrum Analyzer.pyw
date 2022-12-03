@@ -39,6 +39,9 @@ font4 = ('Helvetica', 12)
 textSize = 20
 first = True
 
+colors = [[0.368417,0.506779,0.709798],[0.880722,0.611041,0.142051],[0.560181,0.691569,0.194885],\
+          [0.922526,0.385626,0.209179],[0.528488,0.470624,0.701351],[0.772079,0.431554,0.102387]]
+
 #Opens a url in a new tab in the default webbrowser
 def callback(url):
     webbrowser.open_new_tab(url)
@@ -423,7 +426,7 @@ class CSA:
                         plt.text(label_x_pos, label[1]+0.2, label[2], fontsize = 10, ha='center')
             for label in (ax.get_xticklabels() + ax.get_yticklabels()):
                 label.set_fontsize(textSize)
-            plt.plot(self.B, self.I, color = (0.368417,0.506779,0.709798), linestyle = '-', linewidth = 2)
+            plt.plot(self.B, self.I, color = colors[0], linestyle = '-', linewidth = 2)
             plt.xlim([x_min,x_max])
             plt.xlabel('Magnetic Field (mT)',fontsize=textSize)
             plt.ylabel('Current (pA)',fontsize=textSize)
@@ -513,7 +516,7 @@ class CSA:
                 label.set_fontsize(textSize)
             for xc in range(1,Z+1):
                 plt.axvline(x=xc, color='black', linestyle='--', linewidth = 1)
-            plt.plot(A/mpq, self.I, color = (0.368417,0.506779,0.709798), linestyle = '-', linewidth = 2)
+            plt.plot(A/mpq, self.I, color = colors[0], linestyle = '-', linewidth = 2)
             plt.xlabel(x_label + " Charge State",fontsize=textSize)
             plt.ylabel('Current (pA)',fontsize=textSize)
             plt.title(title)
