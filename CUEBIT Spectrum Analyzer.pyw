@@ -475,7 +475,7 @@ class CSA:
                         plt.text(label[0], label[1]+0.2, label[2], fontsize = 10, ha='center')
             for label in (ax.get_xticklabels() + ax.get_yticklabels()):
                 label.set_fontsize(textSize)
-            plt.plot(mpq, self.I, color = (0.368417,0.506779,0.709798), linestyle = '-', linewidth = 2)
+            plt.plot(mpq, self.I, color = colors[0], linestyle = '-', linewidth = 2)
             plt.xlim([x_min,x_max])
             plt.xlabel('A/q',fontsize=textSize)
             plt.ylabel('Current (pA)',fontsize=textSize)
