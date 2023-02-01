@@ -21,6 +21,9 @@ Installation Instructions
 	d. Matplotlib
 	
 		python -m pip install matplotlib
+	e. Mendeleev
+	
+		python -m pip install mendeleev
 3. Download the code as a .zip file, and extract all contents to the desired directory
 
 
