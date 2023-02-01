@@ -154,11 +154,11 @@ class CSA:
     #Opens About Window with description of software
     def About(self):
         name = "CUEBIT Spectrum Analyzer"
-        version = 'Version: 2.2.4'
-        date = 'Date: 06/28/2022'
+        version = 'Version: 2.2.5'
+        date = 'Date: 02/01/2023'
         support = 'Support: '
         url = 'https://github.com/rhmatti/CUEBIT-Spectrum-Analyzer'
-        copyrightMessage ='Copyright © 2022 Richard Mattish All Rights Reserved.'
+        copyrightMessage ='Copyright © 2023 Richard Mattish All Rights Reserved.'
         t = Toplevel(self.root)
         t.wm_title("About")
         t.geometry("400x300")
