@@ -6,11 +6,11 @@ Installation Instructions
 
 2. In addition to the base install of python, the following packages are required:
 
-	a. Numpy
+	a. NumPy
 	
 		python -m pip install numpy
 
-	b. Scipy
+	b. SciPy
 	
 		python -m pip install scipy
 
