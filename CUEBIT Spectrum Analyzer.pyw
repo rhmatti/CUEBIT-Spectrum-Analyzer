@@ -1,6 +1,6 @@
 #CUEBIT Spectrum Analyzer
 #Author: Richard Mattish
-#Last Updated: 12/03/2021
+#Last Updated: 04/07/2023
 
 #Function:  This program provides a graphical user interface for importing
 #           and analyzing EBIT data files to identify isotopes present in the
@@ -23,6 +23,7 @@ import platform
 import time
 from tkinter import filedialog
 from PIL import ImageTk, Image
+import cv2
 import threading
 import webbrowser
 from mendeleev.fetch import fetch_table
@@ -154,8 +155,8 @@ class CSA:
     #Opens About Window with description of software
     def About(self):
         name = "CUEBIT Spectrum Analyzer"
-        version = 'Version: 2.2.5'
-        date = 'Date: 02/01/2023'
+        version = 'Version: 2.2.6'
+        date = 'Date: 04/07/2023'
         support = 'Support: '
         url = 'https://github.com/rhmatti/CUEBIT-Spectrum-Analyzer'
         copyrightMessage ='Copyright © 2023 Richard Mattish All Rights Reserved.'
@@ -373,6 +374,17 @@ class CSA:
         img = Label(ptable, image=render)
         img.image = render
         img.pack(side="top",fill='both',expand=True)
+        
+    def _resize_image(self,event):
+
+        new_width = event.width
+        new_height = event.height
+
+        self.img_copy.thumbnail((new_width, new_height), )
+        self.image = self.img_copy
+
+        self.background_image = ImageTk.PhotoImage(self.image)
+        self.background.configure(image =  self.background_image)
 
     def quitProgram(self):
         print('quit')
@@ -1264,6 +1276,7 @@ class CSA:
         analysismenu.add_command(label='P', command= lambda: self.elementComparison(15, 31, "Phosphorus-31"))
         analysismenu.add_command(label='Ar', command= lambda: self.elementComparison(18, 40, "Argon-40"))
         analysismenu.add_command(label='Fe', command= lambda: self.elementComparison(26, 56, "Iron-56"))
+        analysismenu.add_command(label='Kr', command= lambda: self.elementComparison(36, 84, "Krypton-84"))
         analysismenu.add_separator()
         analysismenu.add_command(label='OH', command= lambda: self.elementComparison(9, 17, "OH"))
         analysismenu.add_command(label='H2O', command= lambda: self.elementComparison(10, 18, "H$_2$O"))
