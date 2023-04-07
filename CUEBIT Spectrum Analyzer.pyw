@@ -23,7 +23,6 @@ import platform
 import time
 from tkinter import filedialog
 from PIL import ImageTk, Image
-import cv2
 import threading
 import webbrowser
 from mendeleev.fetch import fetch_table
