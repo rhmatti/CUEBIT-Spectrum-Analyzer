@@ -1270,13 +1270,35 @@ class CSA:
         analysismenu.add_command(label='N', command= lambda: self.elementComparison(7, 14, "Nitrogen-14"))
         analysismenu.add_command(label='O', command= lambda: self.elementComparison(8, 16, "Oxygen-16"))
         analysismenu.add_command(label='F', command= lambda: self.elementComparison(9, 19, "Fluorine-19"))
-        analysismenu.add_command(label='Ne', command= lambda: self.elementComparison(10, 20, "Neon-20"))
+
+        #Creates Neon submenu within Analysis menu
+        Ne_menu = Menu(menu, tearoff=0)
+        analysismenu.add_cascade(label='Ne', menu=Ne_menu)
+        Ne_menu.add_command(label='Ne-20 (91%)', command= lambda: self.elementComparison(10, 20, "Neon-20"))
+        Ne_menu.add_command(label='Ne-22 (9%)', command= lambda: self.elementComparison(10, 22, "Neon-22"))
+
         analysismenu.add_command(label='Mg', command= lambda: self.elementComparison(12, 24, "Magnesium-24"))
         analysismenu.add_command(label='Si', command= lambda: self.elementComparison(14, 28, "Silicon-28"))
         analysismenu.add_command(label='P', command= lambda: self.elementComparison(15, 31, "Phosphorus-31"))
         analysismenu.add_command(label='Ar', command= lambda: self.elementComparison(18, 40, "Argon-40"))
         analysismenu.add_command(label='Fe', command= lambda: self.elementComparison(26, 56, "Iron-56"))
-        analysismenu.add_command(label='Kr', command= lambda: self.elementComparison(36, 84, "Krypton-84"))
+
+        #Creates Krypton submenu within Analysis menu
+        Kr_menu = Menu(menu, tearoff=0)
+        analysismenu.add_cascade(label='Kr', menu=Kr_menu)
+        Kr_menu.add_command(label='Kr-82 (12%)', command= lambda: self.elementComparison(36, 82, "Krypton-82"))
+        Kr_menu.add_command(label='Kr-83 (12%)', command= lambda: self.elementComparison(36, 83, "Krypton-83"))
+        Kr_menu.add_command(label='Kr-84 (57%)', command= lambda: self.elementComparison(36, 84, "Krypton-84"))
+        Kr_menu.add_command(label='Kr-86 (17%)', command= lambda: self.elementComparison(36, 86, "Krypton-86"))
+
+        #Creates Xenon submenu within Analysis menu
+        Xe_menu = Menu(menu, tearoff=0)
+        analysismenu.add_cascade(label='Xe', menu=Xe_menu)
+        Xe_menu.add_command(label='Xe-129 (26%)', command= lambda: self.elementComparison(54, 129, "Xenon-129"))
+        Xe_menu.add_command(label='Xe-131 (21%)', command= lambda: self.elementComparison(54, 131, "Xenon-131"))
+        Xe_menu.add_command(label='Xe-132 (27%)', command= lambda: self.elementComparison(54, 132, "Xenon-132"))
+        Xe_menu.add_command(label='Xe-134 (10%)', command= lambda: self.elementComparison(54, 134, "Xenon-134"))
+
         analysismenu.add_separator()
         analysismenu.add_command(label='OH', command= lambda: self.elementComparison(9, 17, "OH"))
         analysismenu.add_command(label='H2O', command= lambda: self.elementComparison(10, 18, "H$_2$O"))
