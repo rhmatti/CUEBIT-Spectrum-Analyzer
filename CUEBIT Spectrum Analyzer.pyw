@@ -640,6 +640,7 @@ class CSA:
                 abundVector.append(abund)
             massArray = np.array(massVector)
             abundArray = np.array(abundVector)
+            abundArray = np.nan_to_num(abundArray)
             commonMass = massArray[np.argmax(abundArray)]
 
             q = int(round(event.xdata,0))
